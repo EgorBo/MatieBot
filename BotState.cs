@@ -9,6 +9,12 @@ public class GUser
     public string Username { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
+
+    public override string ToString()
+    {
+        var str = FirstName + " " + LastName;
+        return str.Replace("\r", "").Replace("\n", "").Trim(' ');
+    }
 }
 
 public class GMessage
@@ -74,30 +80,31 @@ public class BotState
     public string DayStats()
     {
         var stats = _dbContext.Messages
-            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24))
-            .ToArray() // увы
+            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null)
             .GroupBy(g => g.Author)
+            .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
-            .Select((g, index) => $"");
-
+            .Select((g, index) => $"{index}) {g.Key}")
+            .ToArray();
         return $"Стата по флудерам за 24 часа:\n\n{string.Join("\n", stats)}";
     }
 
     public string GlobalStats()
     {
         var stats = _dbContext.Messages
-            .ToArray() // увы
+            .Where(m => m.Author != null)
             .GroupBy(g => g.Author)
+            .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
-            .Select((g, index) => $"");
-
+            .Select((g, index) => $"{index}) {g.Key}")
+            .ToArray();
         return $"Стата по флудерам за всё время:\n\n{string.Join("\n", stats)}";
     }
 
     public GUser GetRandomUser()
     {
-        // How do I avoid loading all users to memory?
-        return _dbContext.Users.ToArray().OrderBy(u => Guid.NewGuid()).FirstOrDefault();
+        // ¯\_(ツ)_/¯
+        return _dbContext.Users.ToArray().MinBy(u => Guid.NewGuid());
     }
 
     public string UserStats()
