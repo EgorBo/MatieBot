@@ -84,7 +84,8 @@ public class BotState
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
-            .Select((g, index) => $"{index}) {g.Key}")
+            .Take(10)
+            .Select((g, index) => $"{index}) {g.Key} - {g.Count()}")
             .ToArray();
         return $"Стата по флудерам за 24 часа:\n\n{string.Join("\n", stats)}";
     }
@@ -96,7 +97,8 @@ public class BotState
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
-            .Select((g, index) => $"{index}) {g.Key}")
+            .Take(10)
+            .Select((g, index) => $"{index}) {g.Key} - {g.Count()}")
             .ToArray();
         return $"Стата по флудерам за всё время:\n\n{string.Join("\n", stats)}";
     }
