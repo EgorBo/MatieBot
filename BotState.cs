@@ -4,7 +4,8 @@ using Telegram.Bot.Types.Enums;
 
 public class GUser
 {
-    public long Id { get; set; }
+    public Guid Id { get; set; }
+    public long TelegramId { get; set; }
     public string Username { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
@@ -12,7 +13,8 @@ public class GUser
 
 public class GMessage
 {
-    public long Id { get; set; }
+    public Guid Id { get; set; }
+    public long TelegramId { get; set; }
     public GUser Author { get; set; }
     public DateTime Date { get; set; }
 }
@@ -23,7 +25,7 @@ public class BotDbContext : DbContext
     public DbSet<GMessage> Messages { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlite("Data Source = matie2.db");
+        => options.UseSqlite("Data Source = matie.db");
 
     public void Initialize()
     {
@@ -46,12 +48,13 @@ public class BotState
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
 
-        var author = _dbContext.Users.FirstOrDefault(u => u.Id == msg.From.Id);
+        var author = _dbContext.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
         if (author == null)
         {
             author = new GUser
             {
-                Id = msg.From.Id,
+                Id = Guid.NewGuid(),
+                TelegramId = msg.From.Id,
                 FirstName = msg.From.FirstName,
                 LastName = msg.From.LastName,
             };
@@ -60,8 +63,9 @@ public class BotState
         _dbContext.Messages.Add(
             new GMessage
             {
+                Id = Guid.NewGuid(),
                 Author = author,
-                Id = msg.MessageId,
+                TelegramId = msg.MessageId,
                 Date = DateTime.UtcNow,
             });
         _dbContext.SaveChanges();
@@ -71,6 +75,7 @@ public class BotState
     {
         var stats = _dbContext.Messages
             .Where(m => m.Date > DateTime.UtcNow.AddHours(-24))
+            .ToArray() // увы
             .GroupBy(g => g.Author)
             .OrderByDescending(g => g.Count())
             .Select((g, index) => $"");
@@ -81,6 +86,7 @@ public class BotState
     public string GlobalStats()
     {
         var stats = _dbContext.Messages
+            .ToArray() // увы
             .GroupBy(g => g.Author)
             .OrderByDescending(g => g.Count())
             .Select((g, index) => $"");
