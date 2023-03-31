@@ -10,11 +10,16 @@ public class OpenAiService
 
     public void Init(string systemMessage)
     {
-        _systemMsg = systemMessage;
         _openAi = new OpenAIAPI(Constants.OpenAiToken);
+        _systemMsg = systemMessage;
+        NewContext(_systemMsg);
+    }
+
+    public void NewContext(string context)
+    {
         _conversation = _openAi.Chat.CreateConversation();
         _conversation.Model = Model.ChatGPTTurbo;
-        _conversation.AppendSystemMessage(_systemMsg);
+        _conversation.AppendSystemMessage(context.Trim());
     }
 
     public async Task<string> SendUserInputAsync(string prompt)
@@ -33,7 +38,7 @@ public class OpenAiService
                 _conversation = _openAi.Chat.CreateConversation();
                 _conversation.Model = Model.ChatGPTTurbo;
                 _conversation.AppendSystemMessage(_systemMsg);
-                _conversation.AppendUserInput(prompt);
+                _conversation.AppendUserInput(prompt.Trim());
                 return await _conversation.GetResponseFromChatbot();
             }
             throw;

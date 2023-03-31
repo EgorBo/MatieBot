@@ -88,6 +88,14 @@ public class MatieBot
                 await botClient.SendTextMessageAsync(chatId: message.Chat,
                     text: _botState.UserStats(), cancellationToken: ct);
             }
+            if (messageText.StartsWith("!context", StringComparison.InvariantCultureIgnoreCase))
+            {
+                _openAi.NewContext(messageText.Remove(0, "!context".Length));
+                var gptResponse = await _openAi.SendUserInputAsync("понял?");
+                await botClient.SendTextMessageAsync(chatId: message.Chat,
+                    replyToMessageId: update?.Message?.MessageId,
+                    text: gptResponse, cancellationToken: ct);
+            }
             else if (messageText.StartsWith("!ping", StringComparison.InvariantCultureIgnoreCase))
             {
                 await botClient.SendTextMessageAsync(chatId: message.Chat,
