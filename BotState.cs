@@ -23,6 +23,8 @@ public class GMessage
     public long TelegramId { get; set; }
     public GUser Author { get; set; }
     public DateTime Date { get; set; }
+    public MessageType Type {get; set; }
+    public bool IsGPT {get; set; }
 }
 
 public class BotDbContext : DbContext
@@ -49,7 +51,7 @@ public class BotState
         _dbContext.Initialize();
     }
 
-    public void RecordMessage(Message msg)
+    public void RecordMessage(Message msg, bool isGPT)
     {
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
@@ -72,9 +74,18 @@ public class BotState
                 Id = Guid.NewGuid(),
                 Author = author,
                 TelegramId = msg.MessageId,
+                IsGPT = isGPT,
+                Type = msg.Type,
                 Date = DateTime.UtcNow,
             });
         _dbContext.SaveChanges();
+    }
+
+    public bool CheckGPTCap()
+    {
+        int count = _dbContext.Messages
+            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT);
+        return count < 50;
     }
 
     public string DayStats()

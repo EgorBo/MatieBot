@@ -22,12 +22,12 @@ public class OpenAiService
         _conversation.AppendSystemMessage(context.Trim());
     }
 
-    public async Task<string> SendUserInputAsync(string prompt)
+    public async Task<(string, bool)> SendUserInputAsync(string prompt)
     {
         try
         {
             _conversation.AppendUserInput(prompt);
-            return await _conversation.GetResponseFromChatbot();
+            return (await _conversation.GetResponseFromChatbot(), false);
         }
         catch (HttpRequestException e)
         {
@@ -39,7 +39,7 @@ public class OpenAiService
                 _conversation.Model = Model.ChatGPTTurbo;
                 _conversation.AppendSystemMessage(_systemMsg);
                 _conversation.AppendUserInput(prompt.Trim());
-                return await _conversation.GetResponseFromChatbot();
+                return (await _conversation.GetResponseFromChatbot(), true);
             }
             throw;
         }
