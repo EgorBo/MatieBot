@@ -2,9 +2,10 @@
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-public class GUser
+public class UserDb
 {
     public Guid Id { get; set; }
+    public long? ChatId { get; set; }
     public long TelegramId { get; set; }
     public string Username { get; set; }
     public string FirstName { get; set; }
@@ -17,11 +18,12 @@ public class GUser
     }
 }
 
-public class GMessage
+public class MessageDb
 {
     public Guid Id { get; set; }
+    public long? ChatId { get; set; }
     public long TelegramId { get; set; }
-    public GUser Author { get; set; }
+    public UserDb Author { get; set; }
     public DateTime Date { get; set; }
     public MessageType Type {get; set; }
     public bool IsGPT {get; set; }
@@ -29,11 +31,11 @@ public class GMessage
 
 public class BotDbContext : DbContext
 {
-    public DbSet<GUser> Users { get; set; }
-    public DbSet<GMessage> Messages { get; set; }
+    public DbSet<UserDb> Users { get; set; }
+    public DbSet<MessageDb> Messages { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlite("Data Source = matie.db");
+        => options.UseSqlite("Data Source = " + Constants.Database);
 
     public void Initialize()
     {
@@ -51,7 +53,7 @@ public class BotState
         _dbContext.Initialize();
     }
 
-    public void RecordMessage(Message msg, bool isGPT)
+    public void RecordMessage(Message msg, bool isGpt)
     {
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
@@ -59,39 +61,41 @@ public class BotState
         var author = _dbContext.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
         if (author == null)
         {
-            author = new GUser
+            author = new UserDb
             {
                 Id = Guid.NewGuid(),
                 TelegramId = msg.From.Id,
+                ChatId = msg.Chat?.Id,
                 FirstName = msg.From.FirstName,
                 LastName = msg.From.LastName,
             };
             _dbContext.Users.Add(author);
         }
         _dbContext.Messages.Add(
-            new GMessage
+            new MessageDb
             {
                 Id = Guid.NewGuid(),
                 Author = author,
+                ChatId = msg.Chat?.Id,
                 TelegramId = msg.MessageId,
-                IsGPT = isGPT,
+                IsGPT = isGpt,
                 Type = msg.Type,
                 Date = DateTime.UtcNow,
             });
         _dbContext.SaveChanges();
     }
 
-    public bool CheckGPTCap()
+    public bool CheckGPTCap(int limit)
     {
         int count = _dbContext.Messages
-            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT);
-        return count < 50;
+            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT == true);
+        return count < limit;
     }
 
-    public string DayStats()
+    public string DayStats(ChatId chatId)
     {
         var stats = _dbContext.Messages
-            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null)
+            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null && m.ChatId == chatId)
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
@@ -101,10 +105,10 @@ public class BotState
         return $"Стата по флудерам за 24 часа:\n\n{string.Join("\n", stats)}";
     }
 
-    public string GlobalStats()
+    public string GlobalStats(ChatId chatId)
     {
         var stats = _dbContext.Messages
-            .Where(m => m.Author != null)
+            .Where(m => m.Author != null && m.ChatId == chatId)
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
@@ -114,14 +118,8 @@ public class BotState
         return $"Стата по флудерам за всё время:\n\n{string.Join("\n", stats)}";
     }
 
-    public GUser GetRandomUser()
+    public string UserStats(ChatId chatId)
     {
-        // ¯\_(ツ)_/¯
-        return _dbContext.Users.ToArray().MinBy(u => Guid.NewGuid());
-    }
-
-    public string UserStats()
-    {
-        return $"У меня в базе {_dbContext.Users.Count()} юзеров";
+        return $"У меня в базе {_dbContext.Users.Count(u => u.ChatId == chatId)} юзеров";
     }
 }
