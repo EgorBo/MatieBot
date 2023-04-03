@@ -84,7 +84,7 @@ public class BotApp
                 if (!triggered)
                     continue;
 
-                if (command.AllowedChats != null && !command.AllowedChats.Contains(message.Chat) && 
+                if (command.AllowedChats.Any() && !command.AllowedChats.Contains(message.Chat) && 
                     (message.From == null || !command.AllowedChats.Contains(message.From.Id)))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
