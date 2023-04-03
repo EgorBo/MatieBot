@@ -6,6 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static Constants;
 
+AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) => {};
 var cts = new CancellationTokenSource();
 await new BotApp().StartListeningAsync(cts);
 await Task.Delay(-1);
