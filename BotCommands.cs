@@ -46,6 +46,15 @@ public class BotCommands
             AllowedChats: null /*any chat*/);
 
         // Ping-pong
+        yield return new Command(Name: "!die",
+            Action: async (msg, msgText, tgClient, state, openAi) =>
+            {
+                await tgClient.ReplyAsync(msg, "Ok :(");
+                Environment.FailFast(":(");
+            },
+            AllowedChats: BotAdmins);
+
+        // Ping-pong
         yield return new Command(Name: "!help",
             Action: async (msg, msgText, tgClient, state, openAi) =>
             {

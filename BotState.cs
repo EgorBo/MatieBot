@@ -94,8 +94,11 @@ public class BotState
 
     public string DayStats(ChatId chatId)
     {
+        if (chatId?.Identifier == null)
+            return "?";
+
         var stats = _dbContext.Messages
-            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null && m.ChatId == chatId)
+            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null && m.ChatId == chatId.Identifier.Value)
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
@@ -107,8 +110,11 @@ public class BotState
 
     public string GlobalStats(ChatId chatId)
     {
+        if (chatId?.Identifier == null)
+            return "?";
+
         var stats = _dbContext.Messages
-            .Where(m => m.Author != null && m.ChatId == chatId)
+            .Where(m => m.Author != null && m.ChatId == chatId.Identifier.Value)
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
             .OrderByDescending(g => g.Count())
