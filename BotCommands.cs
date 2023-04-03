@@ -58,7 +58,7 @@ public class BotCommands
         yield return new Command(Name: BotName, AltName: AltBotName, NeedsOpenAi: true,
             Action: async (msg, msgText, tgClient, state, openAi) =>
             {
-                string gptResponse = await openAi.SendUserInputAsync(msg.Text);
+                string gptResponse = await openAi.SendUserInputAsync(msgText);
                 await tgClient.ReplyAsync(msg, gptResponse);
             },
             AllowedChats: new [] { GoldChatId }.Concat(BotAdmins)); // allow admins to do in DM

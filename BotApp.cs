@@ -55,13 +55,13 @@ public class BotApp
                             (!string.IsNullOrWhiteSpace(command.AltName) && 
                              msgText.StartsWith(command.AltName, StringComparison.OrdinalIgnoreCase)))
                         {
-                            msgText = msgText.Substring(0, command.Name.Length).Trim(' ', ',');
+                            msgText = msgText.Substring(command.Name.Length).Trim(' ', ',');
                             triggered = true;
                         }
                         else if (!string.IsNullOrWhiteSpace(command.AltName) &&
                              msgText.StartsWith(command.AltName, StringComparison.OrdinalIgnoreCase))
                         {
-                            msgText = msgText.Substring(0, command.AltName.Length).Trim(' ', ',');
+                            msgText = msgText.Substring(command.AltName.Length).Trim(' ', ',');
                             triggered = true;
                         }
                         break;
