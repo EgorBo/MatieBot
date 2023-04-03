@@ -44,16 +44,6 @@ public class BotCommands
                 await botApp.TgClient.ReplyAsync(msg, "pong!");
             });
 
-        // Kill bot
-        yield return new Command(Name: "!die",
-            Action: async (msg, trimmedMsg, botApp) =>
-            {
-                await botApp.TgClient.ReplyAsync(msg, "Ok :(");
-                await Task.Delay(1000);
-                Environment.Exit(0);
-            })
-            .ForAdmins();
-
         // Ping-pong
         yield return new Command(Name: "!help",
             Action: async (msg, trimmedMsg, botApp) =>
