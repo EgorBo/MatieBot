@@ -83,6 +83,15 @@ public class BotCommands
             },
             AllowedChats: new[] { GoldChatId }.Concat(BotAdmins)); // allow admins to do in DM
 
+        // General GPT conversation
+        yield return new Command(Name: "!analyze", NeedsOpenAi: true,
+            Action: async (msg, msgText, tgClient, state, openAi) =>
+            {
+                string gptResponse = await openAi.CallModerationAsync(msgText);
+                await tgClient.ReplyAsync(msg, gptResponse);
+            },
+            AllowedChats: new[] { GoldChatId }.Concat(BotAdmins)); // allow admins to do in DM
+
         // Custom context for GPT
         yield return new Command(Name: "!context", AltName: "!контекст", NeedsOpenAi: true,
             Action: async (msg, msgText, tgClient, state, openAi) =>

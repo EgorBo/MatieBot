@@ -8,9 +8,7 @@ using static Constants;
 
 var cts = new CancellationTokenSource();
 await new BotApp().StartListeningAsync(cts);
-Console.WriteLine("Listening... Press any key to stop the bot.");
-Console.ReadKey();
-cts.Cancel();
+await Task.Delay(-1);
 
 public class BotApp
 {
@@ -23,7 +21,7 @@ public class BotApp
     {
         _botState = new BotState();
         _openAi = new OpenAiService();
-        _openAi.Init(ChatGptSystemMessage);
+        await _openAi.InitAsync(ChatGptSystemMessage);
         _botClient = new TelegramBotClient(TelegramToken);
         _botUser = await _botClient.GetMeAsync(cancellationToken: ctx.Token);
         Console.WriteLine($"Started as {_botUser.Username}");
@@ -89,11 +87,11 @@ public class BotApp
                         replyToMessageId: update.Message.MessageId,
                         text: "вы кто такие? я вас не знаю. Access denied.");
                 }
-                else if (command.NeedsOpenAi && !_botState.CheckGPTCap(50))
+                else if (command.NeedsOpenAi && !_botState.CheckGPTCap(500))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
-                        text: "Харэ, не больше 50 запросов в ChatGPT за 24 часа.");
+                        text: "Харэ, не больше 500 запросов в ChatGPT за 24 часа.");
                 }
                 else
                 {

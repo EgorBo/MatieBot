@@ -1,6 +1,7 @@
 ﻿using OpenAI_API;
 using OpenAI_API.Chat;
 using OpenAI_API.Models;
+using OpenAI_API.Moderation;
 
 public class OpenAiService
 {
@@ -8,7 +9,7 @@ public class OpenAiService
     private Conversation _conversation;
     private string _systemMsg;
 
-    public void Init(string systemMessage)
+    public async Task InitAsync(string systemMessage)
     {
         _openAi = new OpenAIAPI(Constants.OpenAiToken);
         _systemMsg = systemMessage;
@@ -20,6 +21,18 @@ public class OpenAiService
         _conversation = _openAi.Chat.CreateConversation();
         _conversation.Model = Model.ChatGPTTurbo;
         _conversation.AppendSystemMessage(context.Trim());
+    }
+
+    public async Task<string> CallModerationAsync(string prompt)
+    {
+        var result = await _openAi.Moderation.CallModerationAsync(
+            new ModerationRequest(prompt, Model.TextModerationLatest));
+
+        string response = result.Results.FirstOrDefault()!
+            .CategoryScores.Where(c => c.Value >= 0.0099)
+            .OrderByDescending(c => c.Value)
+            .Aggregate("", (current, category) => current + $" {category.Key}: {category.Value:F2}\n");
+        return response == "" ? "обычный текст, ничего необычного" : "Анализ:\n" + response;
     }
 
     public async Task<string> SendUserInputAsync(string prompt)
