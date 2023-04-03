@@ -49,7 +49,8 @@ public class BotCommands
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 await botApp.TgClient.ReplyAsync(msg, "Ok :(");
-                Environment.FailFast(":(");
+                await Task.Delay(1000);
+                Environment.Exit(0);
             })
             .ForAdmins();
 

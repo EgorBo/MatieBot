@@ -17,20 +17,22 @@ public class BotApp
     public TelegramBotClient TgClient { get; private set; }
     public User BotUser { get; private set; }
     public BotState State { get; private set; }
+    public CancellationTokenSource Cts { get; private set; }
 
-    public async Task StartListeningAsync(CancellationTokenSource ctx)
+    public async Task StartListeningAsync(CancellationTokenSource cts)
     {
+        Cts = cts;
         State = new BotState();
         OpenAi = new OpenAiService();
         await OpenAi.InitAsync(ChatGptSystemMessage);
         TgClient = new TelegramBotClient(TelegramToken);
-        BotUser = await TgClient.GetMeAsync(cancellationToken: ctx.Token);
+        BotUser = await TgClient.GetMeAsync(cancellationToken: cts.Token);
         Console.WriteLine($"Started as {BotUser.Username}");
         TgClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
             pollingErrorHandler: HandlePollingErrorAsync,
             receiverOptions: new ReceiverOptions { AllowedUpdates = new[] { UpdateType.Message } },
-            cancellationToken: ctx.Token
+            cancellationToken: cts.Token
         );
     }
 
