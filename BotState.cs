@@ -126,6 +126,9 @@ public class BotState
 
     public string UserStats(ChatId chatId)
     {
-        return $"У меня в базе {_dbContext.Users.Count(u => u.ChatId == chatId)} юзеров";
+        if (chatId?.Identifier == null)
+            return "?";
+
+        return $"У меня в базе {_dbContext.Users.Count(u => u.ChatId == chatId.Identifier.Value)} юзеров";
     }
 }
