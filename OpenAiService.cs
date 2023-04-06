@@ -19,7 +19,7 @@ public class OpenAiService
     public void NewContext(string context)
     {
         _conversation = _openAi.Chat.CreateConversation();
-        _conversation.Model = Model.ChatGPTTurbo;
+        _conversation.Model = new Model("gpt-4");
         _conversation.AppendSystemMessage(context.Trim());
     }
 
