@@ -18,6 +18,7 @@ public class BotApp
     public User BotUser { get; private set; }
     public BotState State { get; private set; }
     public CancellationTokenSource Cts { get; private set; }
+    public DateTime StartDate { get; } = DateTime.UtcNow;
 
     public async Task StartListeningAsync(CancellationTokenSource cts)
     {

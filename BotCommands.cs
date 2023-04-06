@@ -1,5 +1,6 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using static Constants;
 
 namespace GoldChatBot;
@@ -44,12 +45,19 @@ public class BotCommands
                 await botApp.TgClient.ReplyAsync(msg, "pong!");
             });
 
-        // Ping-pong
+        // HEEEELP!
         yield return new Command(Name: "!help",
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 // TODO: list all commands
                 await botApp.TgClient.ReplyAsync(msg, "помоги себе сам");
+            });
+
+        // uptime
+        yield return new Command(Name: "!uptime",
+            Action: async (msg, trimmedMsg, botApp) =>
+            {
+                await botApp.TgClient.ReplyAsync(msg, $"{(DateTime.UtcNow - botApp.StartDate).TotalDays:F0} дней.");
             });
 
         // General GPT conversation
@@ -132,7 +140,7 @@ public static class TelegramExtensions
 {
     public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text)
     {
-        return client.SendTextMessageAsync(chatId: msg.Chat,
+        return client.SendTextMessageAsync(chatId: msg.Chat, parseMode: ParseMode.MarkdownV2, 
             replyToMessageId: msg.MessageId, text: text);
     }
 }
