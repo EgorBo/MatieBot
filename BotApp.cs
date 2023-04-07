@@ -30,7 +30,12 @@ public class BotApp
         BotUser = await TgClient.GetMeAsync(cancellationToken: cts.Token);
         Console.WriteLine($"Started as {BotUser.Username}");
         TgClient.StartReceiving(
-            updateHandler: HandleUpdateAsync,
+            updateHandler: (c, u, ct) =>
+            {
+                // Don't block updateHandler
+                ThreadPool.QueueUserWorkItem(_ => HandleUpdateAsync(c, u, ct));
+                return Task.CompletedTask;
+            },
             pollingErrorHandler: HandlePollingErrorAsync,
             receiverOptions: new ReceiverOptions { AllowedUpdates = new[] { UpdateType.Message } },
             cancellationToken: cts.Token
