@@ -35,6 +35,19 @@ public class OpenAiService
         return response == "" ? "обычный текст, ничего необычного" : "Анализ:\n" + response;
     }
 
+    public async Task<string> CompletionAsync(string prompt)
+    {
+        try
+        {
+            var result = await _openAi.Completions.CreateCompletionAsync(prompt);
+            return string.Join(" ", result.Completions.Select(c => c.Text));
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
+    }
+
     public async Task<string> SendUserInputAsync(string prompt)
     {
         try

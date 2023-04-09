@@ -98,6 +98,15 @@ public class BotCommands
             })
             .ForAdmins().ForGoldChat();
 
+        // General GPT conversation
+        yield return new Command(Name: "!complete", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    string gptResponse = await botApp.OpenAi.CompletionAsync(trimmedMsg);
+                    await botApp.TgClient.ReplyAsync(msg, gptResponse);
+                })
+            .ForAdmins().ForGoldChat();
+
         // Custom context for GPT
         yield return new Command(Name: "!context", AltName: "!контекст", NeedsOpenAi: true,
             Action: async (msg, trimmedMsg, botApp) =>
