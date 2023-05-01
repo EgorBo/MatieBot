@@ -45,20 +45,13 @@ public class BotDbContext : DbContext
 
 public class BotState
 {
-    private readonly BotDbContext _dbContext;
-
-    public BotState()
-    {
-        _dbContext = new BotDbContext();
-        _dbContext.Initialize();
-    }
-
     public void RecordMessage(Message msg, bool isGpt)
     {
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
 
-        var author = _dbContext.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
+        using var ctx = new BotDbContext();
+        var author = ctx.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
         if (author == null)
         {
             author = new UserDb
@@ -69,9 +62,9 @@ public class BotState
                 FirstName = msg.From.FirstName,
                 LastName = msg.From.LastName,
             };
-            _dbContext.Users.Add(author);
+            ctx.Users.Add(author);
         }
-        _dbContext.Messages.Add(
+        ctx.Messages.Add(
             new MessageDb
             {
                 Id = Guid.NewGuid(),
@@ -82,12 +75,13 @@ public class BotState
                 Type = msg.Type,
                 Date = DateTime.UtcNow,
             });
-        _dbContext.SaveChanges();
+        ctx.SaveChanges();
     }
 
     public bool CheckGPTCap(int limit)
     {
-        int count = _dbContext.Messages
+        using var ctx = new BotDbContext();
+        int count = ctx.Messages
             .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT == true);
         return count < limit;
     }
@@ -97,7 +91,8 @@ public class BotState
         if (chatId?.Identifier == null)
             return "?";
 
-        var stats = _dbContext.Messages
+        using var ctx = new BotDbContext();
+        var stats = ctx.Messages
             .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null && m.ChatId == chatId.Identifier.Value)
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
@@ -113,7 +108,8 @@ public class BotState
         if (chatId?.Identifier == null)
             return "?";
 
-        var stats = _dbContext.Messages
+        using var ctx = new BotDbContext();
+        var stats = ctx.Messages
             .Where(m => m.Author != null && m.ChatId == chatId.Identifier.Value)
             .GroupBy(g => g.Author)
             .AsEnumerable() // SQLite ¯\_(ツ)_/¯
@@ -129,6 +125,7 @@ public class BotState
         if (chatId?.Identifier == null)
             return "?";
 
-        return $"У меня в базе {_dbContext.Users.Count(u => u.ChatId == chatId.Identifier.Value)} юзеров";
+        using var ctx = new BotDbContext();
+        return $"У меня в базе {ctx.Users.Count(u => u.ChatId == chatId.Identifier.Value)} юзеров";
     }
 }

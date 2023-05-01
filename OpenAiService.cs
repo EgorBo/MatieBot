@@ -3,6 +3,16 @@ using OpenAI_API.Chat;
 using OpenAI_API.Models;
 using OpenAI_API.Moderation;
 
+public class HttpClientFactory : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name)
+    {
+        var client = new HttpClient();
+        client.Timeout = TimeSpan.FromSeconds(300);
+        return client;
+    }
+}
+
 public class OpenAiService
 {
     private OpenAIAPI _openAi;
@@ -12,6 +22,7 @@ public class OpenAiService
     public async Task InitAsync(string systemMessage)
     {
         _openAi = new OpenAIAPI(Constants.OpenAiToken);
+        _openAi.HttpClientFactory = new HttpClientFactory();
         _systemMsg = systemMessage;
         NewContext(_systemMsg);
     }
@@ -19,6 +30,7 @@ public class OpenAiService
     public void NewContext(string context)
     {
         _conversation = _openAi.Chat.CreateConversation();
+        _conversation.RequestParameters.Temperature = 0.9;
         _conversation.Model = new Model("gpt-4");
         _conversation.AppendSystemMessage(context.Trim());
     }
