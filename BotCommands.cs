@@ -61,7 +61,7 @@ public class BotCommands
             });
 
         // General GPT conversation
-        yield return new Command(Name: BotName, AltName: AltBotName, NeedsOpenAi: true,
+        yield return new Command(Name: Constants.BotName, AltName: AltBotName, NeedsOpenAi: true,
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 string gptResponse = await botApp.OpenAi.SendUserInputAsync(trimmedMsg);
