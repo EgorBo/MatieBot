@@ -31,7 +31,7 @@ public class OpenAiService
     {
         _conversation = _openAi.Chat.CreateConversation();
         _conversation.RequestParameters.Temperature = 0.9;
-        _conversation.Model = new Model("gpt-3.5-turbo");
+        _conversation.Model = new Model("gpt-4.0");
         _conversation.AppendSystemMessage(context.Trim());
     }
 
