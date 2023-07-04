@@ -98,12 +98,21 @@ public class BotCommands
             })
             .ForAdmins().ForGoldChat();
 
-        // General GPT conversation
+        // OpenAI completion
         yield return new Command(Name: "!complete", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    string gptResponse = await botApp.OpenAi.CompletionAsync(trimmedMsg);
-                    await botApp.TgClient.ReplyAsync(msg, gptResponse);
+                    string response = await botApp.OpenAi.CompletionAsync(trimmedMsg);
+                    await botApp.TgClient.ReplyAsync(msg, response);
+                })
+            .ForAdmins().ForGoldChat();
+
+        // OpenAI drawing
+        yield return new Command(Name: "!draw", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    string response = await botApp.OpenAi.GenerateImageAsync(trimmedMsg);
+                    await botApp.TgClient.ReplyAsync(msg, response);
                 })
             .ForAdmins().ForGoldChat();
 

@@ -1,5 +1,6 @@
 ﻿using OpenAI_API;
 using OpenAI_API.Chat;
+using OpenAI_API.Images;
 using OpenAI_API.Models;
 using OpenAI_API.Moderation;
 
@@ -54,6 +55,19 @@ public class OpenAiService
         {
             var result = await _openAi.Completions.CreateCompletionAsync(prompt);
             return string.Join(" ", result.Completions.Select(c => c.Text));
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
+    }
+
+    public async Task<string> GenerateImageAsync(string prompt)
+    {
+        try
+        {
+            var result = await _openAi.ImageGenerations.CreateImageAsync(prompt);
+            return result.Data[0].Url;
         }
         catch (Exception e)
         {
