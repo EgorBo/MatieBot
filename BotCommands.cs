@@ -158,6 +158,13 @@ public static class TelegramExtensions
 {
     public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text)
     {
-        return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, text: text);
+        try
+        {
+            return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, text: text, parseMode: ParseMode.MarkdownV2);
+        }
+        catch (Exception e)
+        {
+            return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, text: text);
+        }
     }
 }
