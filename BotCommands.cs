@@ -114,7 +114,7 @@ public class BotCommands
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string response = await botApp.OpenAi.GenerateImageAsync(trimmedMsg);
-                    await botApp.TgClient.ReplyAsync(msg, response);
+                    await botApp.TgClient.ReplyWithImageAsync(msg, response);
                 })
             .ForAdmins().ForGoldChat();
 
@@ -186,5 +186,11 @@ public static class TelegramExtensions
     {
         List<MessageEntity> entities = ParseMessageEntity(ref text);
         return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, entities: entities, text: text);
+    }
+
+    public static Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url)
+    {
+        return client.SendMediaGroupAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, 
+            media: new InputMediaPhoto[] { new(InputFile.FromUri(url)) });
     }
 }
