@@ -176,7 +176,7 @@ public static class TelegramExtensions
         if (entities.Count > 0)
         {
             // Remove backticks from the message
-            message = new Regex("```").Replace(message, "");
+            message = new Regex("```").Replace(message, "   ");
         }
         return entities; 
     }
