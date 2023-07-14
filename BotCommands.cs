@@ -92,12 +92,21 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // General GPT conversation
-        yield return new Command(Name: "!analyze", NeedsOpenAi: true,
+        yield return new Command(Name: "!summary", NeedsOpenAi: true,
             Action: async (msg, trimmedMsg, botApp) =>
             {
-                string gptResponse = await botApp.OpenAi.CallModerationAsync(trimmedMsg);
+                string gptResponse = await botApp.OpenAi.AnalyzeChatSummaryAsync(trimmedMsg, botApp.CurrentCharView);
                 await botApp.TgClient.ReplyAsync(msg, gptResponse);
             })
+            .ForAdmins().ForGoldChat();
+
+        // General GPT conversation
+        yield return new Command(Name: "!analyze", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    string gptResponse = await botApp.OpenAi.CallModerationAsync(trimmedMsg);
+                    await botApp.TgClient.ReplyAsync(msg, gptResponse);
+                })
             .ForAdmins().ForGoldChat();
 
         // OpenAI completion
@@ -114,7 +123,14 @@ public class BotCommands
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string response = await botApp.OpenAi.GenerateImageAsync(trimmedMsg);
-                    await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                    if (!Uri.TryCreate(response, UriKind.Absolute, out _))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: response);
+                    }
+                    else
+                    {
+                        await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                    }
                 })
             .ForAdmins().ForGoldChat();
 

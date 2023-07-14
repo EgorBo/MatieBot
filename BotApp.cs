@@ -1,4 +1,5 @@
 ﻿using GoldChatBot;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -19,6 +20,7 @@ public class BotApp
     public BotState State { get; private set; }
     public CancellationTokenSource Cts { get; private set; }
     public DateTime StartDate { get; } = DateTime.UtcNow;
+    public List<string> CurrentCharView { get; set; } = new();
 
     public async Task StartListeningAsync(CancellationTokenSource cts)
     {
@@ -111,7 +113,29 @@ public class BotApp
                 handled = true;
                 break;
             }
+
             State.RecordMessage(message, requestOpenAi);
+
+            // Just for fun - keep chat history in the global chat in a trimmable variable (we're not saving it to the DB)
+            // We're going to keep it less than 8K tokens to be able to feed it to the GPT
+            if (!handled && message.Type == MessageType.Text && message.Chat == GoldChatId && 
+                message.From != null && !string.IsNullOrEmpty(message.From.Username))
+            {
+                string text = message.Text;
+                if (message.ReplyToMessage != null && message.ReplyToMessage.From != null &&
+                    !string.IsNullOrEmpty(message.ReplyToMessage.From.Username))
+                {
+                    // Who are you talking to?
+                    text = $"{message.ReplyToMessage.From.Username}, " + text;
+                }
+
+                CurrentCharView.Add($"[{message.From.Username}]: {text}");
+                if (CurrentCharView.Count > 4000)
+                {
+                    // To avoid memory leaks
+                    CurrentCharView.RemoveRange(0, 1000);
+                }
+            }
 
             // BotAdmin - just redirect msg to the golden chat (for fun)
             if (!handled && BotAdmins.Contains(message.Chat))

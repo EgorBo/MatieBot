@@ -30,11 +30,17 @@ public class OpenAiService
 
     public void NewContext(string context)
     {
-        _conversation = _openAi.Chat.CreateConversation();
-        _conversation.RequestParameters.Temperature = 0.9;
-        _conversation.RequestParameters.MaxTokens = 1024;
-        _conversation.Model = new Model("gpt-4");
-        _conversation.AppendSystemMessage(context.Trim());
+        _conversation = CreateContext(_openAi, context);
+    }
+
+    public static Conversation CreateContext(OpenAIAPI openAi, string context)
+    {
+        var conversation = openAi.Chat.CreateConversation();
+        conversation.RequestParameters.Temperature = 0.9;
+        conversation.RequestParameters.MaxTokens = 1024;
+        conversation.Model = new Model("gpt-4");
+        conversation.AppendSystemMessage(context.Trim());
+        return conversation;
     }
 
     public async Task<string> CallModerationAsync(string prompt)
@@ -80,7 +86,7 @@ public class OpenAiService
         try
         {
             _conversation.AppendUserInput(prompt);
-            return await _conversation.GetResponseFromChatbot();
+            return await _conversation.GetResponseFromChatbotAsync();
         }
         catch (HttpRequestException e)
         {
@@ -95,5 +101,20 @@ public class OpenAiService
             }
             throw;
         }
+    }
+
+    public async Task<string> AnalyzeChatSummaryAsync(string context, List<string> messages)
+    {
+        if (string.IsNullOrWhiteSpace(context))
+        {
+            context = "Я хочу дать тебе историю сообщений из закрытого группового чата на 30 человек где каждое сообщение вида \"[имя участника группы]: текст сообщения\". " +
+                      "Пожалуйтса, проведи общий анализ авторов сообщений и напиши краткую характеристику каждого участника группы";
+        }
+
+        const int threshold = 100;
+
+        Conversation ctx = CreateContext(_openAi, context);
+        ctx.AppendUserInput(string.Join("\n", messages.Count > threshold ? messages.TakeLast(threshold) : messages));
+        return await ctx.GetResponseFromChatbotAsync();
     }
 }
