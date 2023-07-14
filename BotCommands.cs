@@ -125,7 +125,15 @@ public class BotCommands
                     string response = await botApp.OpenAi.GenerateImageAsync(trimmedMsg);
                     if (!Uri.TryCreate(response, UriKind.Absolute, out _))
                     {
-                        await botApp.TgClient.ReplyAsync(msg, text: response);
+                        // Don't judge me for this error handling
+                        if (response?.Contains("content_policy_violation") == true)
+                        {
+                            await botApp.TgClient.ReplyAsync(msg, "Content policy violation, sorry. Try a different prompt.");
+                        }
+                        else
+                        {
+                            await botApp.TgClient.ReplyAsync(msg, text: response);
+                        }
                     }
                     else
                     {
