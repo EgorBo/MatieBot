@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using System.Text.RegularExpressions;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static Constants;
@@ -156,15 +157,22 @@ public record Command(string Name,
 
 public static class TelegramExtensions
 {
+    private static List<MessageEntity> ExtractCodeSnippets(string message)
+    {
+        var snippets = new List<MessageEntity>();
+        var regex = new Regex(@"```(.*?)```", RegexOptions.Singleline);
+        var matches = regex.Matches(message);
+        foreach (Match match in matches)
+        {
+            snippets.Add(new MessageEntity { Length = match.Length, Offset = match.Index, Type = MessageEntityType.Code});
+        }
+        return snippets;
+    }
+
+
     public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text)
     {
-        try
-        {
-            return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, text: text, parseMode: ParseMode.MarkdownV2);
-        }
-        catch (Exception e)
-        {
-            return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, text: text);
-        }
+        List<MessageEntity> entities = ExtractCodeSnippets(text);
+        return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, entities: entities, text: text);
     }
 }
