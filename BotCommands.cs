@@ -1,9 +1,10 @@
-﻿using System.Text.RegularExpressions;
+﻿using SixLabors.ImageSharp;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static Constants;
-using static System.Net.Mime.MediaTypeNames;
+using File = System.IO.File;
 
 namespace GoldChatBot;
 
@@ -138,6 +139,47 @@ public class BotCommands
                     else
                     {
                         await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
+        // OpenAI drawing (image variation)
+        yield return new Command(Name: "!vary", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (msg.ReplyToMessage == null || msg.ReplyToMessage.Photo?.Length == 0)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "не вижу картинку, сделай на нее реплай и позови еще раз.");
+                    }
+                    else
+                    {
+                        PhotoSize photo = msg.ReplyToMessage!.Photo!.OrderByDescending(p => p.Width).First();
+                        var fileInfo = await botApp.TgClient.GetFileAsync(photo.FileId);
+                        string jpgFile = Path.GetTempFileName() + ".jpg";
+                        string pngFile = Path.GetTempFileName() + ".png";
+                        await using (var jpgStream = new FileStream(jpgFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                        {
+                            await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
+                        }
+                        using (Image image = await Image.LoadAsync(jpgFile))
+                        {
+                            await image.SaveAsync(pngFile);
+                        }
+
+                        int count = int.TryParse(trimmedMsg, out int c) ? c : 1;
+                        count = Math.Clamp(count, 1, 3); // not more than 3 variations
+
+                        await using var fileStream = new FileStream(pngFile, FileMode.Open, FileAccess.Read);
+                        string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream), count);
+                        foreach (var response in responses)
+                        {
+                            if (!Uri.TryCreate(response, UriKind.Absolute, out _))
+                                await botApp.TgClient.ReplyAsync(msg, text: response);
+                            else
+                                await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                        }
+                        File.Delete(pngFile);
+                        File.Delete(jpgFile);
                     }
                 })
             .ForAdmins().ForGoldChat();

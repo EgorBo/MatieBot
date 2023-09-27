@@ -3,6 +3,9 @@ using OpenAI_API.Chat;
 using OpenAI_API.Images;
 using OpenAI_API.Models;
 using OpenAI_API.Moderation;
+using System.Net.Http.Headers;
+using System;
+using Newtonsoft.Json;
 
 public class HttpClientFactory : IHttpClientFactory
 {
@@ -95,7 +98,7 @@ public class OpenAiService
             {
                 // Spawn a new chat context and try again
                 _conversation = _openAi.Chat.CreateConversation();
-                _conversation.Model = Model.ChatGPTTurbo;
+                _conversation.Model = new Model("gpt-4");
                 _conversation.AppendSystemMessage(_systemMsg);
                 return "Лимит по токенам, пересоздаю контекст";
             }
@@ -116,5 +119,45 @@ public class OpenAiService
         Conversation ctx = CreateContext(_openAi, context);
         ctx.AppendUserInput(string.Join("\n", messages.Count > threshold ? messages.TakeLast(threshold) : messages));
         return await ctx.GetResponseFromChatbotAsync();
+    }
+
+    public async Task<string[]> GenerateImageVariationAsync(StreamContent content, int count)
+    {
+        try
+        {
+            // OpenAI_API doesn't support this API
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+            using var formData = new MultipartFormDataContent
+            {
+                { content, "image", "file.png" },
+                { new StringContent(count.ToString()), "n" },
+                { new StringContent("512x512"), "size" }
+            };
+            var response = await httpClient.PostAsync("https://api.openai.com/v1/images/variations", formData);
+            if (response.IsSuccessStatusCode)
+            {
+                var files = JsonConvert.DeserializeObject<ImageVariationResult>(await response.Content.ReadAsStringAsync());
+                return files.data.Select(item => item.url).ToArray();
+            }
+
+            string error = await response.Content.ReadAsStringAsync();
+            return new[] { $"Failed: {error}" };
+        }
+        catch (Exception e)
+        {
+            return new[] { $"Failed: {e.Message}" };
+        }
+    }
+
+    public class Datum
+    {
+        public string url { get; set; }
+    }
+
+    public class ImageVariationResult
+    {
+        public int created { get; set; }
+        public List<Datum> data { get; set; }
     }
 }
