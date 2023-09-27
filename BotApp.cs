@@ -1,5 +1,4 @@
 ﻿using GoldChatBot;
-using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -130,7 +129,7 @@ public class BotApp
                 }
 
                 CurrentCharView.Add($"[{message.From.Username}]: {text}");
-                if (CurrentCharView.Count > 4000)
+                if (CurrentCharView.Count > 10000)
                 {
                     // To avoid memory leaks
                     CurrentCharView.RemoveRange(0, 1000);
