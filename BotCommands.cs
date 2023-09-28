@@ -226,6 +226,22 @@ public class BotCommands
                 await botApp.TgClient.ReplyAsync(msg, text: "🫡");
             })
             .ForAdmins().ForGoldChat();
+
+
+        yield return new Command(Name: "!help", AltName: "!commands",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    string help = "Commands:\n\n";
+                    foreach (var cmd in AllComands)
+                    {
+                        help += "!" + cmd.Name;
+                        if (!string.IsNullOrWhiteSpace(cmd.AltName))
+                            help += $" (or !{cmd.AltName})";
+                        help += "\n";
+                    }
+                    await botApp.TgClient.ReplyAsync(msg, help);
+                })
+            .ForAdmins().ForGoldChat();
     }
 }
 
