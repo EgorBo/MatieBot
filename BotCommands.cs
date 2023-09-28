@@ -224,11 +224,11 @@ public class BotCommands
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string help = "Commands:\n\n";
-                    foreach (var cmd in AllComands)
+                    foreach (var cmd in AllComands.OrderBy(c => c.Name))
                     {
-                        help += "!" + cmd.Name;
+                        help += cmd.Name;
                         if (!string.IsNullOrWhiteSpace(cmd.AltName))
-                            help += $" (or !{cmd.AltName})";
+                            help += $" (or {cmd.AltName})";
                         help += "\n";
                     }
                     await botApp.TgClient.ReplyAsync(msg, help);
