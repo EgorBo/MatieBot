@@ -21,7 +21,7 @@ public class BotCommands
                 string stats = botApp.State.UserStats(GoldChatId);
                 await botApp.TgClient.ReplyAsync(msg, stats);
             })
-            .ForGoldChat();
+            .ForAdmins().ForGoldChat();
 
         // Top flooders last 24H
         yield return new Command(Name: "!stats", AltName: "!daystats",
@@ -30,7 +30,7 @@ public class BotCommands
                 string stats = botApp.State.DayStats(GoldChatId);
                 await botApp.TgClient.ReplyAsync(msg, stats);
             })
-            .ForGoldChat();
+            .ForAdmins().ForGoldChat();
 
         // Top flooders all time
         yield return new Command(Name: "!globalstats", 
@@ -39,21 +39,13 @@ public class BotCommands
                 string stats = botApp.State.GlobalStats(GoldChatId);
                 await botApp.TgClient.ReplyAsync(msg, stats);
             })
-            .ForGoldChat();
+            .ForAdmins().ForGoldChat();
 
         // Ping-pong
         yield return new Command(Name: "!ping", 
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 await botApp.TgClient.ReplyAsync(msg, "pong!");
-            });
-
-        // HEEEELP!
-        yield return new Command(Name: "!help",
-            Action: async (msg, trimmedMsg, botApp) =>
-            {
-                // TODO: list all commands
-                await botApp.TgClient.ReplyAsync(msg, "помоги себе сам");
             });
 
         // uptime
