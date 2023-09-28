@@ -150,6 +150,36 @@ public class OpenAiService
         }
     }
 
+    public async Task<string[]> GenerateImageWithMaskAsync(StreamContent content, string prompt)
+    {
+        try
+        {
+            // OpenAI_API doesn't support this API
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+            using var formData = new MultipartFormDataContent
+            {
+                { content, "image", "file.png" },
+                { new StringContent(prompt), "prompt" },
+                { new StringContent("1"), "n" },
+                { new StringContent("512x512"), "size" }
+            };
+            var response = await httpClient.PostAsync("https://api.openai.com/v1/images/edits", formData);
+            if (response.IsSuccessStatusCode)
+            {
+                var files = JsonConvert.DeserializeObject<ImageVariationResult>(await response.Content.ReadAsStringAsync());
+                return files.data.Select(item => item.url).ToArray();
+            }
+
+            string error = await response.Content.ReadAsStringAsync();
+            return new[] { $"Failed: {error}" };
+        }
+        catch (Exception e)
+        {
+            return new[] { $"Failed: {e.Message}" };
+        }
+    }
+
     public class Datum
     {
         public string url { get; set; }

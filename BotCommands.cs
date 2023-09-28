@@ -173,13 +173,47 @@ public class BotCommands
                         string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream), count);
                         foreach (var response in responses)
                         {
-                            if (!Uri.TryCreate(response, UriKind.Absolute, out _))
+                            if (!response.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
+                                !Uri.TryCreate(response, UriKind.Absolute, out _))
                                 await botApp.TgClient.ReplyAsync(msg, text: response);
                             else
                                 await botApp.TgClient.ReplyWithImageAsync(msg, response);
                         }
                         File.Delete(pngFile);
                         File.Delete(jpgFile);
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
+        // OpenAI drawing (image variation)
+        yield return new Command(Name: "!fill", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (msg.ReplyToMessage == null || msg.ReplyToMessage.Document == null)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "не вижу png file, пришли файлом");
+                    }
+                    else
+                    {
+                        //PhotoSize photo = msg.ReplyToMessage!.Photo!.OrderByDescending(p => p.Width).First();
+                        var fileInfo = await botApp.TgClient.GetFileAsync(msg.ReplyToMessage.Document.FileId);
+                        string pngFile = Path.GetTempFileName() + ".png";
+                        await using (var loadStream = new FileStream(pngFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                        {
+                            await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, loadStream);
+                        }
+
+                        await using var fileStream = new FileStream(pngFile, FileMode.Open, FileAccess.Read);
+                        string[] responses = await botApp.OpenAi.GenerateImageWithMaskAsync(new StreamContent(fileStream), trimmedMsg);
+                        foreach (var response in responses)
+                        {
+                            if (!response.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
+                                !Uri.TryCreate(response, UriKind.Absolute, out _))
+                                await botApp.TgClient.ReplyAsync(msg, text: response);
+                            else
+                                await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                        }
+                        File.Delete(pngFile);
                     }
                 })
             .ForAdmins().ForGoldChat();
