@@ -1,4 +1,5 @@
-﻿using GoldChatBot;
+﻿using System.Net.Http.Headers;
+using GoldChatBot;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -6,7 +7,12 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static Constants;
 
-AppDomain.CurrentDomain.UnhandledException += (_, _) => {};
+
+using var httpClient = new HttpClient();
+httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+var models = await httpClient.GetStringAsync("https://api.openai.com/v1/models");
+
+AppDomain.CurrentDomain.UnhandledException += (_, _) => { };
 var cts = new CancellationTokenSource();
 await new BotApp().StartListeningAsync(cts);
 await Task.Delay(-1);
