@@ -106,7 +106,7 @@ public class OpenAiService
         public string type { get; set; }
     }
 
-    public async Task<string> GenerateImageAsync_Dalle3(string prompt, int count, Orientation orientation)
+    public async Task<string[]> GenerateImageAsync_Dalle3(string prompt, int count, Orientation orientation)
     {
         try
         {
@@ -132,7 +132,11 @@ public class OpenAiService
             var str = await response.Content.ReadAsStringAsync();
             var dalle3 = JsonConvert.DeserializeObject<Dalle3>(str);
 
-            return dalle3.error != null ? dalle3.error.message : dalle3.data[0].url;
+            if (dalle3.error != null)
+            {
+                return new[] { dalle3.error.message };
+            }
+            return dalle3.data.Select(i => i.url).ToArray();
         }
         catch (Exception e)
         {

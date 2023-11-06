@@ -121,23 +121,26 @@ public class BotCommands
                     if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
                     {
                         orientation = OpenAiService.Orientation.Landscape;
-                        trimmedMsg = trimmedMsg.Substring("landscape".Length).Trim();
+                        trimmedMsg = trimmedMsg.Substring("landscape ".Length);
                     }
 
                     if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
                     {
                         orientation = OpenAiService.Orientation.Portrait;
-                        trimmedMsg = trimmedMsg.Substring("portrait".Length).Trim();
+                        trimmedMsg = trimmedMsg.Substring("portrait ".Length);
                     }
 
-                    string response = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg, 1, orientation);
-                    if (!Uri.TryCreate(response, UriKind.Absolute, out _))
+                    string[] responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg.Trim(' '), 2, orientation);
+                    foreach (var response in responses)
                     {
-                        await botApp.TgClient.ReplyAsync(msg, text: response);
-                    }
-                    else
-                    {
-                        await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                        if (!Uri.TryCreate(response, UriKind.Absolute, out _))
+                        {
+                            await botApp.TgClient.ReplyAsync(msg, text: response);
+                        }
+                        else
+                        {
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                        }
                     }
                 })
             .ForAdmins().ForGoldChat();
