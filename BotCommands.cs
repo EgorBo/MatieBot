@@ -281,9 +281,19 @@ public static class TelegramExtensions
         return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, parseMode: ParseMode.Markdown, text: text);
     }
 
-    public static Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url)
+    public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url)
     {
-        return client.SendMediaGroupAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, 
-            media: new InputMediaPhoto[] { new(InputFile.FromUri(url)) });
+        var tmp = Path.GetTempFileName() + ".jpg";
+        await DownloadFileTaskAsync(new HttpClient(), new Uri(url), tmp);
+
+        await client.SendMediaGroupAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, 
+            media: new InputMediaPhoto[] { new(InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))) });
+    }
+
+    private static async Task DownloadFileTaskAsync(this HttpClient client, Uri uri, string file)
+    {
+        await using var s = await client.GetStreamAsync(uri);
+        await using var fs = new FileStream(file, FileMode.CreateNew);
+        await s.CopyToAsync(fs);
     }
 }
