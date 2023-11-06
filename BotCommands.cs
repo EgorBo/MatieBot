@@ -130,7 +130,7 @@ public class BotCommands
                         trimmedMsg = trimmedMsg.Substring("portrait ".Length);
                     }
 
-                    string[] responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg.Trim(' '), 2, orientation);
+                    string[] responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg.Trim(' '), 1, orientation);
                     foreach (var response in responses)
                     {
                         if (!Uri.TryCreate(response, UriKind.Absolute, out _))
