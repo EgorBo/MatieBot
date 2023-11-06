@@ -112,9 +112,6 @@ public class OpenAiService
         {
             using var client = new HttpClient();
 
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Bearer {Constants.OpenAiToken}");
-            client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/json");
-
             var res = orientation switch
             {
                 Orientation.Landscape => "1792x1024",
@@ -122,12 +119,21 @@ public class OpenAiService
                 _ => "1024x1024"
             };
 
-            var jsonContent = new StringContent(
-                $"{{\"model\": \"dall-e-3\", \"prompt\": \"{prompt}\", \"n\": {count}, \"size\": \"{res}\"}}",
-                Encoding.UTF8, "application/json"
-            );
-
-            HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/images/generations", jsonContent);
+            var requestData = new
+            {
+                model = "dall-e-3",
+                prompt = prompt,
+                n = count,
+                size = res
+            };
+            string requestJson = JsonConvert.SerializeObject(requestData);
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/images/generations")
+            {
+                Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+            HttpResponseMessage response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
 
             var str = await response.Content.ReadAsStringAsync();
             var dalle3 = JsonConvert.DeserializeObject<Dalle3>(str);
