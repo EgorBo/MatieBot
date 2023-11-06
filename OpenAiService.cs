@@ -6,6 +6,7 @@ using OpenAI_API.Moderation;
 using System.Net.Http.Headers;
 using System;
 using Newtonsoft.Json;
+using System.Text;
 
 public class HttpClientFactory : IHttpClientFactory
 {
@@ -81,6 +82,62 @@ public class OpenAiService
         catch (Exception e)
         {
             return e.Message;
+        }
+    }
+
+    public class Dalle3ImgData
+    {
+        public string revised_prompt { get; set; }
+        public string url { get; set; }
+    }
+
+    public class Dalle3
+    {
+        public int created { get; set; }
+        public List<Dalle3ImgData> data { get; set; }
+        public Error error { get; set; }
+    }
+
+    public class Error
+    {
+        public string code { get; set; }
+        public string message { get; set; }
+        public object param { get; set; }
+        public string type { get; set; }
+    }
+
+    public async Task<string> GenerateImageAsync_Dalle3(string prompt, int count, Orientation orientation)
+    {
+        try
+        {
+            using var client = new HttpClient();
+
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Bearer {Constants.OpenAiToken}");
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/json");
+
+            var res = orientation switch
+            {
+                Orientation.Landscape => "1792x1024",
+                Orientation.Portrait => "1024x1792",
+                _ => "1024x1024"
+            };
+
+            var jsonContent = new StringContent(
+                $"{{\"model\": \"dall-e-3\", \"prompt\": \"{prompt}\", \"n\": {count}, \"size\": \"{res}\"}}",
+                Encoding.UTF8, "application/json"
+            );
+
+            HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/images/generations", jsonContent);
+
+            var str = await response.Content.ReadAsStringAsync();
+            var dalle3 = JsonConvert.DeserializeObject<Dalle3>(str);
+
+            return dalle3.error != null ? dalle3.error.message : dalle3.data[0].url;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
     }
 
@@ -189,5 +246,12 @@ public class OpenAiService
     {
         public int created { get; set; }
         public List<Datum> data { get; set; }
+    }
+
+    public enum Orientation
+    {
+        Landscape,
+        Portrait,
+        Square
     }
 }

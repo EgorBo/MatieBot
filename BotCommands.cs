@@ -115,18 +115,25 @@ public class BotCommands
         yield return new Command(Name: "!draw", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    string response = await botApp.OpenAi.GenerateImageAsync(trimmedMsg);
+                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
+
+                    var orientation = OpenAiService.Orientation.Square;
+                    if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Landscape;
+                        trimmedMsg = trimmedMsg.Substring("landscape".Length).Trim();
+                    }
+
+                    if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Portrait;
+                        trimmedMsg = trimmedMsg.Substring("portrait".Length).Trim();
+                    }
+
+                    string response = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg, 1, orientation);
                     if (!Uri.TryCreate(response, UriKind.Absolute, out _))
                     {
-                        // Don't judge me for this error handling
-                        if (response?.Contains("content_policy_violation") == true)
-                        {
-                            await botApp.TgClient.ReplyAsync(msg, "Content policy violation, sorry. Try a different prompt.");
-                        }
-                        else
-                        {
-                            await botApp.TgClient.ReplyAsync(msg, text: response);
-                        }
+                        await botApp.TgClient.ReplyAsync(msg, text: response);
                     }
                     else
                     {
