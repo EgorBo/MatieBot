@@ -130,16 +130,17 @@ public class BotCommands
                         trimmedMsg = trimmedMsg.Substring("portrait ".Length);
                     }
 
-                    string[] responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg.Trim(' '), 1, orientation);
-                    foreach (var response in responses)
+                    var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg.Trim(' '), 1, orientation);
+                    if (responses.error != null)
                     {
-                        if (!Uri.TryCreate(response, UriKind.Absolute, out _))
+                        await botApp.TgClient.ReplyAsync(msg, text: responses.error.message);
+                    }
+                    else
+                    {
+                        foreach (var response in responses.data)
                         {
-                            await botApp.TgClient.ReplyAsync(msg, text: response);
-                        }
-                        else
-                        {
-                            await botApp.TgClient.ReplyWithImageAsync(msg, response);
+                            await botApp.TgClient.ReplyAsync(msg, text: "Revised prompt: " + response.revised_prompt);
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url);
                         }
                     }
                 })
