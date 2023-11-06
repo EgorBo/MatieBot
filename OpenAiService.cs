@@ -133,7 +133,6 @@ public class OpenAiService
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
             HttpResponseMessage response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
 
             var str = await response.Content.ReadAsStringAsync();
             var dalle3 = JsonConvert.DeserializeObject<Dalle3>(str);
