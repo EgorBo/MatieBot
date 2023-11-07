@@ -56,7 +56,7 @@ public class BotCommands
             });
 
         // General GPT conversation
-        yield return new Command(Name: Constants.BotName, AltName: AltBotName, NeedsOpenAi: true,
+        yield return new Command(Name: Constants.BotName, AltName: AltBotName, 
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 string gptResponse = await botApp.OpenAi.SendUserInputAsync(trimmedMsg);
@@ -65,7 +65,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // ChatGPT jailbreak
-        yield return new Command(Name: "!baza", AltName: "!база", NeedsOpenAi: true,
+        yield return new Command(Name: "!baza", AltName: "!база", 
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 string query =
@@ -85,7 +85,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // General GPT conversation
-        yield return new Command(Name: "!summary", NeedsOpenAi: true,
+        yield return new Command(Name: "!summary",
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 string gptResponse = await botApp.OpenAi.AnalyzeChatSummaryAsync(trimmedMsg, botApp.CurrentCharView);
@@ -94,7 +94,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // General GPT conversation
-        yield return new Command(Name: "!analyze", NeedsOpenAi: true,
+        yield return new Command(Name: "!analyze", 
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string gptResponse = await botApp.OpenAi.CallModerationAsync(trimmedMsg);
@@ -103,7 +103,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI completion
-        yield return new Command(Name: "!complete", NeedsOpenAi: true,
+        yield return new Command(Name: "!complete", 
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string response = await botApp.OpenAi.CompletionAsync(trimmedMsg);
@@ -131,7 +131,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI TTS
-        yield return new Command(Name: "!tts", NeedsOpenAi: true,
+        yield return new Command(Name: "!tts", 
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     if (!botApp.State.CheckDalleCap(Dalle3CapPerUser, msg.From.Id))
@@ -273,7 +273,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // Custom context for GPT
-        yield return new Command(Name: "!context", AltName: "!контекст", NeedsOpenAi: true,
+        yield return new Command(Name: "!context", AltName: "!контекст",
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 botApp.OpenAi.NewContext(trimmedMsg);

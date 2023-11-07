@@ -110,6 +110,9 @@ public class OpenAiService
 
     public async Task<string> TextToSpeachAsync(string text)
     {
+        if (text.Length > 1000)
+            text = text.Substring(0, 1000);
+
         try
         {
             using var client = new HttpClient();
