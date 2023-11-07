@@ -144,7 +144,7 @@ public class BotCommands
                     else
                     {
                         await botApp.TgClient.SendAudioAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, 
-                            audio: InputFile.FromStream(File.OpenRead(response), Path.GetFileName(response)));
+                            audio: InputFile.FromStream(File.OpenRead(response), "generated_voice.mp3"));
                         File.Delete(response);
                     }
                 })
