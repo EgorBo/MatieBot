@@ -136,6 +136,11 @@ public class BotCommands
                 {
                     trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
 
+                    if (string.IsNullOrWhiteSpace(trimmedMsg) && msg.ReplyToMessage != null)
+                    {
+                        trimmedMsg = msg.ReplyToMessage.Text!.Trim(' ', '\n', '\r', '\t');
+                    }
+
                     var response = await botApp.OpenAi.TextToSpeachAsync(trimmedMsg.Trim(' '));
                     if (!File.Exists(response))
                     {
