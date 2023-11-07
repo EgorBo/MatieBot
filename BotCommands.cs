@@ -115,6 +115,12 @@ public class BotCommands
         yield return new Command(Name: "!draw", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
+                    if (!botApp.State.CheckDalleCap(Dalle3CapPerUser, msg.From.Id))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: $"харэ, не больше {Dalle3CapPerUser} запросов на рыло за 24 часа.");
+                        return;
+                    }
+
                     trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
 
                     var orientation = OpenAiService.Orientation.Square;

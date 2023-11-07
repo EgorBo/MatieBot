@@ -104,11 +104,11 @@ public class BotApp
                         replyToMessageId: update.Message.MessageId,
                         text: "вы кто такие? я вас не знаю. Access denied.");
                 }
-                else if (command.NeedsOpenAi && !State.CheckGPTCap(GptCaptPerDay))
+                else if (command.NeedsOpenAi && !State.CheckGPTCap(GptCapPerDay))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
-                        text: $"Харэ, не больше {GptCaptPerDay} запросов в ChatGPT за 24 часа.");
+                        text: $"Харэ, не больше {GptCapPerDay} запросов в ChatGPT за 24 часа.");
                 }
                 else
                 {

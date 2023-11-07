@@ -86,6 +86,17 @@ public class BotState
         return count < limit;
     }
 
+    public bool CheckDalleCap(int limit, long id)
+    {
+        if (Constants.BotAdmins.Contains(id))
+            return true;
+
+        using var ctx = new BotDbContext();
+        int count = ctx.Messages
+            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT && m.Author.TelegramId == id);
+        return count < limit;
+    }
+
     public string DayStats(ChatId chatId)
     {
         if (chatId?.Identifier == null)
