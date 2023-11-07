@@ -111,6 +111,51 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+        yield return new Command(Name: "!tts_set_voice", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    string voice = trimmedMsg.Trim(' ', '\n', '\r', '\t').ToLower();
+                    if (voice != "alloy" &&
+                        voice != "echo" &&
+                        voice != "fable" &&
+                        voice != "nova" &&
+                        voice != "onyx" &&
+                        voice != "shimmer")
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Must be one of these: alloy, echo, fable, onyx, nova, and shimmer.");
+                        return;
+                    }
+                    OpenAiService.DefaultVoice = voice;
+                    await botApp.TgClient.ReplyAsync(msg, text: "🫡");
+                })
+            .ForAdmins().ForGoldChat();
+
+        // OpenAI TTS
+        yield return new Command(Name: "!tts", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (!botApp.State.CheckDalleCap(Dalle3CapPerUser, msg.From.Id))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: $"харэ, не больше {Dalle3CapPerUser} запросов на рыло за 24 часа.");
+                        return;
+                    }
+
+                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
+
+                    var response = await botApp.OpenAi.TextToSpeachAsync(trimmedMsg.Trim(' '));
+                    if (!File.Exists(response))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: response);
+                    }
+                    else
+                    {
+                        await botApp.TgClient.SendAudioAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, 
+                            audio: InputFile.FromStream(File.OpenRead(response), Path.GetFileName(response)));
+                        File.Delete(response);
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
         // OpenAI drawing
         yield return new Command(Name: "!draw", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>

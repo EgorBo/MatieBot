@@ -106,6 +106,40 @@ public class OpenAiService
         public string type { get; set; }
     }
 
+    public static string DefaultVoice = "alloy";
+
+    public async Task<string> TextToSpeachAsync(string text)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            var requestData = new
+            {
+                model = "tts-1",
+                input = text,
+                voice = DefaultVoice
+            };
+            string requestJson = JsonConvert.SerializeObject(requestData);
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/audio/speech")
+            {
+                Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+            HttpResponseMessage response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+
+            var tmpFile = Path.GetTempFileName() + ".mp3";
+            await using var fs = new FileStream(tmpFile, FileMode.Create, FileAccess.Write);
+            await (await response.Content.ReadAsStreamAsync()).CopyToAsync(fs);
+            return tmpFile;
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
+    }
+
     public async Task<Dalle3> GenerateImageAsync_Dalle3(string prompt, int count, Orientation orientation)
     {
         try
