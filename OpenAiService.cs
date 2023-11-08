@@ -229,8 +229,9 @@ public class OpenAiService
             using var formData = new MultipartFormDataContent
             {
                 { content, "image", "file.png" },
-                { new StringContent(count.ToString()), "n" },
-                { new StringContent("512x512"), "size" }
+                { new StringContent("1"), "n" },
+                { new StringContent("dall-e-3"), "model" },
+                { new StringContent("1024x1024"), "size" }
             };
             var response = await httpClient.PostAsync("https://api.openai.com/v1/images/variations", formData);
             if (response.IsSuccessStatusCode)
