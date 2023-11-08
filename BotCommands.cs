@@ -190,7 +190,7 @@ public class BotCommands
                         foreach (var response in responses.data)
                         {
                             //await botApp.TgClient.ReplyAsync(msg, text: "Revised prompt: " + response.revised_prompt);
-                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url);
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
                         }
                     }
                 })
@@ -332,14 +332,15 @@ public static class TelegramExtensions
         return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, parseMode: ParseMode.Markdown, text: text);
     }
 
-    public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url)
+    public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url, string caption = "")
     {
         var tmp = Path.GetTempFileName() + ".jpg";
         await DownloadFileTaskAsync(new HttpClient(), new Uri(url), tmp);
 
-        await client.SendMediaGroupAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, 
-            media: new InputMediaPhoto[] { new(InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))) });
+        await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, caption: caption,
+            photo: (InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))));
     }
+
 
     private static async Task DownloadFileTaskAsync(this HttpClient client, Uri uri, string file)
     {

@@ -4,6 +4,7 @@ public static class Constants
 {
     public static readonly string OpenAiToken = Environment.GetEnvironmentVariable("MATIE_OAI_TOKEN");
     public static readonly string TelegramToken = Environment.GetEnvironmentVariable("MATIE_TG_TOKEN");
+    public static readonly bool NoDB = Environment.GetEnvironmentVariable("MATIE_NO_DB") != null;
     public const string BotName = "Матье";
     public const string AltBotName = "Matie";
     public const string ChatGptSystemMessage = $"Тебя зовут {BotName}, ты отвечаешь на запросы в групповом чате";

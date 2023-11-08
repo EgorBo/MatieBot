@@ -47,6 +47,9 @@ public class BotState
 {
     public void RecordMessage(Message msg, bool isGpt)
     {
+        if (Constants.NoDB)
+            return;
+
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
 
@@ -80,6 +83,9 @@ public class BotState
 
     public bool CheckGPTCap(int limit)
     {
+        if (Constants.NoDB)
+            return true;
+
         using var ctx = new BotDbContext();
         int count = ctx.Messages
             .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT == true);
@@ -88,6 +94,9 @@ public class BotState
 
     public bool CheckDalleCap(int limit, long id)
     {
+        if (Constants.NoDB)
+            return true;
+
         if (Constants.BotAdmins.Contains(id))
             return true;
 
@@ -99,6 +108,9 @@ public class BotState
 
     public string DayStats(ChatId chatId)
     {
+        if (Constants.NoDB)
+            return "<debug>";
+
         if (chatId?.Identifier == null)
             return "?";
 
@@ -116,6 +128,9 @@ public class BotState
 
     public string GlobalStats(ChatId chatId)
     {
+        if (Constants.NoDB)
+            return "<debug>";
+
         if (chatId?.Identifier == null)
             return "?";
 
@@ -133,6 +148,9 @@ public class BotState
 
     public string UserStats(ChatId chatId)
     {
+        if (Constants.NoDB)
+            return "<debug>";
+
         if (chatId?.Identifier == null)
             return "?";
 
