@@ -126,7 +126,6 @@ public class BotCommands
                         return;
                     }
                     OpenAiService.DefaultVoice = voice;
-                    await botApp.TgClient.ReplyAsync(msg, text: "🫡");
                 })
             .ForAdmins().ForGoldChat();
 
@@ -155,6 +154,21 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+
+        yield return new Command(Name: "!draw_set_style", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    string voice = trimmedMsg.Trim(' ', '\n', '\r', '\t').ToLower();
+                    if (voice != "vivid" &&
+                        voice != "natural")
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Must be one of these: vivid or natural");
+                        return;
+                    }
+                    OpenAiService.DefaultStyle = voice;
+                })
+            .ForAdmins().ForGoldChat();
+
         // OpenAI drawing
         yield return new Command(Name: "!draw", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
@@ -180,7 +194,10 @@ public class BotCommands
                         trimmedMsg = trimmedMsg.Substring("portrait ".Length);
                     }
 
-                    var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(trimmedMsg.Trim(' '), 1, orientation);
+                    var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(/* enable HD only for admins */ 
+                        BotAdmins.Contains(msg.From.Id), 
+                        trimmedMsg.Trim(' '), 1, orientation);
+                        trimmedMsg.Trim(' '), 1, orientation);
                     if (responses.error != null)
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: responses.error.message);

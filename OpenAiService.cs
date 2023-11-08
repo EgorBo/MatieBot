@@ -143,7 +143,9 @@ public class OpenAiService
         }
     }
 
-    public async Task<Dalle3> GenerateImageAsync_Dalle3(string prompt, int count, Orientation orientation)
+    public static string DefaultStyle = "vivid";
+
+    public async Task<Dalle3> GenerateImageAsync_Dalle3(bool isHd, string prompt, int count, Orientation orientation)
     {
         try
         {
@@ -161,7 +163,9 @@ public class OpenAiService
                 model = "dall-e-3",
                 prompt = prompt,
                 n = count,
-                size = res
+                size = res,
+                style = DefaultStyle,
+                quality = isHd ? "hd" : "standard"
             };
             string requestJson = JsonConvert.SerializeObject(requestData);
             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/images/generations")
