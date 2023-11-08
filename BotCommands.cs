@@ -197,7 +197,6 @@ public class BotCommands
                     var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(/* enable HD only for admins */ 
                         BotAdmins.Contains(msg.From.Id), 
                         trimmedMsg.Trim(' '), 1, orientation);
-                        trimmedMsg.Trim(' '), 1, orientation);
                     if (responses.error != null)
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: responses.error.message);
