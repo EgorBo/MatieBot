@@ -123,7 +123,7 @@ public class OpenAiService
             using var client = new HttpClient();
             var requestData = new
             {
-                model = "tts-1",
+                model = "tts-1-hd",
                 input = text,
                 voice = DefaultVoice
             };
