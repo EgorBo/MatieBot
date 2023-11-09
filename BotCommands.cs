@@ -111,6 +111,15 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+        yield return new Command(Name: "!set_model", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    OpenAiService.DefaultGptModel = trimmedMsg.Trim(' ', '\n', '\r', '\t').ToLower();
+                    botApp.OpenAi.NewContext(null);
+                    await botApp.TgClient.ReplyAsync(msg, "Default model is set to " + OpenAiService.DefaultGptModel);
+                })
+            .ForAdmins().ForGoldChat();
+
         yield return new Command(Name: "!tts_set_voice", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {

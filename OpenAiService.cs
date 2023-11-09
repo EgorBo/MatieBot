@@ -37,13 +37,18 @@ public class OpenAiService
         _conversation = CreateContext(_openAi, context);
     }
 
+    public static string DefaultGptModel = "gpt-4";//gpt-4-vision-preview
+
     public static Conversation CreateContext(OpenAIAPI openAi, string context)
     {
         var conversation = openAi.Chat.CreateConversation();
         conversation.RequestParameters.Temperature = 0.9;
         conversation.RequestParameters.MaxTokens = 1024;
-        conversation.Model = new Model("gpt-4");
-        conversation.AppendSystemMessage(context.Trim());
+        conversation.Model = new Model(DefaultGptModel);
+        if (!string.IsNullOrWhiteSpace(context))
+        {
+            conversation.AppendSystemMessage(context.Trim());
+        }
         return conversation;
     }
 
@@ -200,7 +205,7 @@ public class OpenAiService
             {
                 // Spawn a new chat context and try again
                 _conversation = _openAi.Chat.CreateConversation();
-                _conversation.Model = new Model("gpt-4");
+                _conversation.Model = new Model(DefaultGptModel);
                 _conversation.AppendSystemMessage(_systemMsg);
                 return "Лимит по токенам, пересоздаю контекст";
             }
