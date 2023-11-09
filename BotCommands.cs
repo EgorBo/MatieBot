@@ -58,7 +58,7 @@ public class BotCommands
         yield return new Command(Name: "!models",
             Action: async (msg, trimmedMsg, botApp) =>
             {
-                var models = string.Join(", ", botApp.OpenAi.GetAllModels());
+                var models = string.Join(", ", await botApp.OpenAi.GetAllModels());
                 await botApp.TgClient.ReplyAsync(msg, $"Models: {models}");
             });
 
