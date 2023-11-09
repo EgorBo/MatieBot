@@ -8,10 +8,6 @@ using Telegram.Bot.Types.Enums;
 using static Constants;
 
 
-using var httpClient = new HttpClient();
-httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
-var models = await httpClient.GetStringAsync("https://api.openai.com/v1/models");
-
 AppDomain.CurrentDomain.UnhandledException += (_, _) => { };
 var cts = new CancellationTokenSource();
 await new BotApp().StartListeningAsync(cts);

@@ -258,6 +258,14 @@ public class OpenAiService
         }
     }
 
+    public async Task<string[]> GetAllModels()
+    {
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+        var models = JsonConvert.DeserializeObject<Models>(await httpClient.GetStringAsync("https://api.openai.com/v1/models"));
+        return models.data.Select(item => item.id).Distinct().OrderBy(i => i).ToArray();
+    }
+
     public async Task<string[]> GenerateImageWithMaskAsync(StreamContent content, string prompt)
     {
         try
@@ -291,6 +299,10 @@ public class OpenAiService
     public class Datum
     {
         public string url { get; set; }
+        public string id { get; set; }
+        public string @object { get; set; }
+        public int created { get; set; }
+        public string owned_by { get; set; }
     }
 
     public class ImageVariationResult
@@ -304,5 +316,11 @@ public class OpenAiService
         Landscape,
         Portrait,
         Square
+    }
+
+    public class Models
+    {
+        public string @object { get; set; }
+        public List<Datum> data { get; set; }
     }
 }

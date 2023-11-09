@@ -55,6 +55,19 @@ public class BotCommands
                 await botApp.TgClient.ReplyAsync(msg, $"{(DateTime.UtcNow - botApp.StartDate).TotalDays:F0} дней.");
             });
 
+        yield return new Command(Name: "!models",
+            Action: async (msg, trimmedMsg, botApp) =>
+            {
+                var models = string.Join(", ", botApp.OpenAi.GetAllModels());
+                await botApp.TgClient.ReplyAsync(msg, $"Models: {models}");
+            });
+
+        yield return new Command(Name: "!get_model",
+            Action: async (msg, trimmedMsg, botApp) =>
+            {
+                await botApp.TgClient.ReplyAsync(msg, $"Current model: {OpenAiService.DefaultGptModel}");
+            });
+
         // General GPT conversation
         yield return new Command(Name: Constants.BotName, AltName: AltBotName, 
             Action: async (msg, trimmedMsg, botApp) =>
