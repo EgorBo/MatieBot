@@ -232,6 +232,8 @@ public class OpenAiService
     public class ChatCompletionResponse
     {
         public List<Choice> choices { get; set; }
+
+        public Error error { get; set; }
     }
 
 
@@ -266,7 +268,7 @@ public class OpenAiService
                         }
                     },
                 },
-                max_tokens = 500
+                max_tokens = 800
             };
 
             using var client = new HttpClient();
@@ -279,7 +281,7 @@ public class OpenAiService
             HttpResponseMessage response = await client.SendAsync(request);
             var str = await response.Content.ReadAsStringAsync();
             var gptResponse = JsonConvert.DeserializeObject<ChatCompletionResponse>(str);
-            return gptResponse.choices.First().message.content;
+            return gptResponse.error != null ? gptResponse.error.message : gptResponse.choices.First().message.content;
         }
         catch (Exception e)
         {
