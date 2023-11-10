@@ -213,7 +213,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI Vision API
-        yield return new Command(Name: "!vision",
+        yield return new Command(Name: "!vision", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
