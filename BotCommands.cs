@@ -1,4 +1,6 @@
-﻿using SixLabors.ImageSharp;
+﻿using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs;
+using SixLabors.ImageSharp;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -177,7 +179,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI Vision API
-        yield return new Command(Name: "!describe", AltName: "!vision",
+        yield return new Command(Name: "!vision",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
@@ -192,9 +194,38 @@ public class BotCommands
                         var response = await botApp.OpenAi.VisionApiAsync(trimmedMsg, firstUrl, "high");
                         await botApp.TgClient.ReplyAsync(msg, text: response);
                     }
+                    else if (msg.ReplyToMessage?.Photo?.Length > 0)
+                    {
+                        // First, save file from Telegram to local disk
+                        PhotoSize photo = msg.ReplyToMessage!.Photo!.OrderByDescending(p => p.Width).First();
+                        var fileInfo = await botApp.TgClient.GetFileAsync(photo.FileId);
+                        string tmpLocalFile = Path.GetTempFileName() + ".jpg";
+                        await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                            await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
+
+                        // Upload to Azure Blob Storage
+                        var blobServiceClient = new BlobServiceClient(AzureBlobCS);
+                        string containerName = "telega";
+                        var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+                        string blobName = Guid.NewGuid() + ".jpg";
+                        var blobClient = containerClient.GetBlobClient(blobName);
+                        await using FileStream uploadFileStream = File.OpenRead(tmpLocalFile);
+                        await blobClient.UploadAsync(uploadFileStream, true);
+                        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders { ContentType = "image/jpg" });
+                        uploadFileStream.Close();
+                        await containerClient.SetAccessPolicyAsync(PublicAccessType.Blob);
+                        string publicUrl = blobClient.Uri.AbsoluteUri;
+
+                        // Call OpenAI Vision API
+                        var response = await botApp.OpenAi.VisionApiAsync(trimmedMsg, publicUrl, detail: "high");
+                        await botApp.TgClient.ReplyAsync(msg, text: response);
+
+                        // Clean up, don't bother removing it from Azure
+                        File.Delete(tmpLocalFile);
+                    }
                     else
                     {
-                        await botApp.TgClient.ReplyAsync(msg, text: "Не вижу урла на картинку");
+                        await botApp.TgClient.ReplyAsync(msg, text: "Не вижу картинку, либо гони урл либо реплай на мессадж с картинкой.");
                     }
                 })
             .ForAdmins().ForGoldChat();
