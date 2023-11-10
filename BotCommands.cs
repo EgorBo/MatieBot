@@ -322,6 +322,51 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+
+        // OpenAI drawing
+        yield return new Command(Name: "!!draw", NeedsOpenAi: true,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (!botApp.State.CheckDalleCap(Dalle3CapPerUser, msg.From.Id))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: $"харэ, не больше {Dalle3CapPerUser} запросов на рыло за 24 часа.");
+                        return;
+                    }
+
+                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
+
+                    var orientation = OpenAiService.Orientation.Square;
+                    if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Landscape;
+                        trimmedMsg = trimmedMsg.Substring("landscape ".Length);
+                    }
+
+                    if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Portrait;
+                        trimmedMsg = trimmedMsg.Substring("portrait ".Length);
+                    }
+
+                    var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(/* enable HD only for admins */
+                        BotAdmins.Contains(msg.From.Id),
+                        "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: " + trimmedMsg.Trim(' '), 1, orientation);
+                    if (responses.error != null)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: responses.error.message);
+                    }
+                    else
+                    {
+                        foreach (var response in responses.data)
+                        {
+                            //await botApp.TgClient.ReplyAsync(msg, text: "Revised prompt: " + response.revised_prompt);
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
+                        }
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
+
         // OpenAI drawing (image variation)
         yield return new Command(Name: "!vary", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>
