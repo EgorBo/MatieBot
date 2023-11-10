@@ -176,6 +176,29 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+        // OpenAI Vision API
+        yield return new Command(Name: "!describe", AltName: "!vision",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
+                    
+                    Regex urlRegex = new Regex(@"(http[s]?://[^ \n\r]+)");
+                    Match match = urlRegex.Match(trimmedMsg);
+
+                    if (match.Success)
+                    {
+                        string firstUrl = match.Value;
+                        trimmedMsg = trimmedMsg.Replace(firstUrl, "").Trim();
+                        var response = await botApp.OpenAi.VisionApiAsync(trimmedMsg, firstUrl, "high");
+                        await botApp.TgClient.ReplyAsync(msg, text: response);
+                    }
+                    else
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Не вижу урла на картинку");
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
 
         yield return new Command(Name: "!draw_set_style", NeedsOpenAi: true,
                 Action: async (msg, trimmedMsg, botApp) =>

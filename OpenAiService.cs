@@ -24,6 +24,12 @@ public class OpenAiService
     private Conversation _conversation;
     private string _systemMsg;
 
+    public OpenAiService()
+    {
+        _openAi = new OpenAIAPI(Constants.OpenAiToken);
+        _openAi.HttpClientFactory = new HttpClientFactory();
+    }
+
     public async Task InitAsync(string systemMessage)
     {
         _openAi = new OpenAIAPI(Constants.OpenAiToken);
@@ -210,6 +216,74 @@ public class OpenAiService
                 return "Лимит по токенам, пересоздаю контекст";
             }
             throw;
+        }
+    }
+
+    public class Choice
+    {
+        public Message message { get; set; }
+    }
+
+    public class Message
+    {
+        public string content { get; set; }
+    }
+
+    public class ChatCompletionResponse
+    {
+        public List<Choice> choices { get; set; }
+    }
+
+
+    public async Task<string> VisionApiAsync(string prompt, string url, string detail)
+    {
+        try
+        {
+            var requestData = new 
+            {
+                model = "gpt-4-vision-preview",
+                messages = new object[]
+                {
+                    new 
+                    {
+                        role = "user",
+                        content = string.IsNullOrWhiteSpace(prompt) ? "Опиши картинку" : prompt
+                    },
+                    new
+                    {
+                        role = "user",
+                        content = new []
+                        {
+                            new
+                            {
+                                type = "image_url",
+                                image_url = new
+                                {
+                                    url = url, 
+                                    detail = detail
+                                }
+                            },
+                        }
+                    },
+                },
+                max_tokens = 500
+            };
+
+            using var client = new HttpClient();
+            string requestJson = JsonConvert.SerializeObject(requestData);
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions")
+            {
+                Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+            HttpResponseMessage response = await client.SendAsync(request);
+            var str = await response.Content.ReadAsStringAsync();
+            var gptResponse = JsonConvert.DeserializeObject<ChatCompletionResponse>(str);
+            return gptResponse.choices.First().message.content;
+        }
+        catch (Exception e)
+        {
+            return e.Message;
         }
     }
 
