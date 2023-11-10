@@ -182,18 +182,33 @@ public class BotCommands
         yield return new Command(Name: "!stt", AltName: "!войсоблядь",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
+                    string fileId = null;
                     if (msg.ReplyToMessage?.Voice != null)
                     {
-                        var fileInfo = await botApp.TgClient.GetFileAsync(msg.ReplyToMessage!.Voice.FileId);
-                        string tmpLocalFile = Path.GetTempFileName() + ".mp3";
-                        await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
-                            await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
-
-                        await using var fileStream = new FileStream(tmpLocalFile, FileMode.Open, FileAccess.Read);
-                        string responses = await botApp.OpenAi.VoiceToText(new StreamContent(fileStream));
-
-                        await botApp.TgClient.ReplyAsync(msg, text: responses, parse: false);
+                        fileId = msg.ReplyToMessage.Voice.FileId;
                     }
+                    else if (msg.ReplyToMessage?.Audio != null)
+                    {
+                        fileId = msg.ReplyToMessage.Audio.FileId;
+                    }
+                    else
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Не вижу войса/аудио файла, сделай на них реплай.");
+                        return;
+                    }
+
+                    var fileInfo = await botApp.TgClient.GetFileAsync(fileId);
+                    string tmpLocalFile = Path.GetTempFileName() + ".mp3";
+                    await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                        await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
+
+                    await using var fileStream = new FileStream(tmpLocalFile, FileMode.Open, FileAccess.Read);
+                    string responses = await botApp.OpenAi.VoiceToText(new StreamContent(fileStream));
+
+                    await botApp.TgClient.ReplyAsync(msg, text: responses, parse: false);
+
+                    // Clean up
+                    File.Delete(tmpLocalFile);
                 })
             .ForAdmins().ForGoldChat();
 
