@@ -236,6 +236,28 @@ public class OpenAiService
         public Error error { get; set; }
     }
 
+    public async Task<string> VoiceToText(StreamContent content)
+    {
+        try
+        {
+            // OpenAI_API doesn't support this API
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Constants.OpenAiToken);
+            using var formData = new MultipartFormDataContent
+            {
+                { content, "file", "file.mp3" },
+                { new StringContent("whisper-1"), "model" },
+                { new StringContent("text"), "response_format" },
+                //{ new StringContent("ru-RU"), "language" },
+            };
+            var response = await httpClient.PostAsync("https://api.openai.com/v1/audio/transcriptions", formData);
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
+    }
 
     public async Task<string> VisionApiAsync(string prompt, string url, string detail)
     {

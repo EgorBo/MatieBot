@@ -178,6 +178,25 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+        // OpenAI TTS
+        yield return new Command(Name: "!stt", AltName: "!войсоблядь",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (msg.ReplyToMessage?.Voice != null)
+                    {
+                        var fileInfo = await botApp.TgClient.GetFileAsync(msg.ReplyToMessage!.Voice.FileId);
+                        string tmpLocalFile = Path.GetTempFileName() + ".mp3";
+                        await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+                            await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
+
+                        await using var fileStream = new FileStream(tmpLocalFile, FileMode.Open, FileAccess.Read);
+                        string responses = await botApp.OpenAi.VoiceToText(new StreamContent(fileStream));
+
+                        await botApp.TgClient.ReplyAsync(msg, text: responses, parse: false);
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
         // OpenAI Vision API
         yield return new Command(Name: "!vision",
                 Action: async (msg, trimmedMsg, botApp) =>
@@ -419,9 +438,9 @@ public record Command(string Name,
 
 public static class TelegramExtensions
 {
-    public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text)
+    public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text, bool parse = true)
     {
-        return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, parseMode: ParseMode.Markdown, text: text);
+        return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, parseMode: parse ? ParseMode.Markdown : null, text: text);
     }
 
     public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url, string caption = "")
