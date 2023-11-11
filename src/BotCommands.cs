@@ -158,7 +158,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI GPT_Vision API
-        yield return new Command(Name: "!vision", AltName: "!describe", CommandType: CommandType.GPT_Drawing,
+        yield return new Command(Name: "!vision", AltName: "!describe", CommandType: CommandType.GPT_Vision,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     Regex urlRegex = new Regex(@"(http[s]?://[^ \n\r]+)");

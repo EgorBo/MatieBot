@@ -170,11 +170,24 @@ public class Database
         user = user?.Trim(' ')?.TrimStart('@') ?? "";
         if (user.Length > 0)
         {
-            var userObj = ctx.Users.FirstOrDefault(u => u.Username == user);
+            var userObj = ctx.Users.LastOrDefault(u => u.Username == user);
             if (userObj == null)
             {
                 return "User not found";
             }
+
+            int count24 = ctx.Messages.Count(m => 
+                m.Date > DateTime.UtcNow.AddHours(-24) &&
+                (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) &&
+                m.Author.TelegramId == userObj.TelegramId);
+
+            int countAllTime = ctx.Messages.Count(m =>
+                (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) &&
+                m.Author.TelegramId == userObj.TelegramId);
+
+            int cap24 = userObj.Dalle3Cap;
+
+            return $"@{user} послал `{count24}` запроса в Dalle-3/Vision. Лимит: `{cap24}`. Таких же запросов за всё время: `{countAllTime}`.";
         }
         return "User not found";
     }
