@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Headers;
-using GoldChatBot;
+﻿using GoldChatBot;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -7,7 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static Constants;
 
-
+Console.WriteLine("Starting bot...");
 AppDomain.CurrentDomain.UnhandledException += (_, _) => { };
 var cts = new CancellationTokenSource();
 await new BotApp().StartListeningAsync(cts);
@@ -18,15 +17,14 @@ public class BotApp
     public OpenAiService OpenAi { get; private set; }
     public TelegramBotClient TgClient { get; private set; }
     public User BotUser { get; private set; }
-    public BotState State { get; private set; }
+    public Database BotDb { get; private set; }
     public CancellationTokenSource Cts { get; private set; }
     public DateTime StartDate { get; } = DateTime.UtcNow;
-    public List<string> CurrentCharView { get; set; } = new();
 
     public async Task StartListeningAsync(CancellationTokenSource cts)
     {
         Cts = cts;
-        State = new BotState();
+        BotDb = new Database();
         OpenAi = new OpenAiService();
         await OpenAi.InitAsync(ChatGptSystemMessage);
         TgClient = new TelegramBotClient(TelegramToken);
@@ -52,7 +50,7 @@ public class BotApp
             if (update.Message is not { Text: { } msgText } message)
                 return;
 
-            bool requestOpenAi = false;
+            Command processedCommand = null;
             bool handled = false;
             foreach (var command in BotCommands.AllComands)
             {
@@ -61,18 +59,16 @@ public class BotApp
                 {
                     case CommandTrigger.StartsWith:
                     {
-                        if (msgText.StartsWith(command.Name, StringComparison.OrdinalIgnoreCase) ||
-                            (!string.IsNullOrWhiteSpace(command.AltName) && 
-                             msgText.StartsWith(command.AltName, StringComparison.OrdinalIgnoreCase)))
+                        if (msgText.StartsWith(command.Name + " ", StringComparison.OrdinalIgnoreCase))
                         {
-                            msgText = msgText.Substring(command.Name.Length).Trim(' ', ',');
+                            msgText = msgText.Substring(command.Name.Length + 1).Trim(' ', ',', '\r', '\n', '\t');
                             triggered = true;
                         }
                         else if (!string.IsNullOrWhiteSpace(command.AltName) &&
-                             msgText.StartsWith(command.AltName, StringComparison.OrdinalIgnoreCase))
+                             msgText.StartsWith(command.AltName + " ", StringComparison.OrdinalIgnoreCase))
                         {
-                            msgText = msgText.Substring(command.AltName.Length).Trim(' ', ',');
-                            triggered = true;
+                            msgText = msgText.Substring(command.AltName.Length + 1).Trim(' ', ',', '\r', '\n', '\t');
+                                triggered = true;
                         }
                         break;
                     }
@@ -100,7 +96,13 @@ public class BotApp
                         replyToMessageId: update.Message.MessageId,
                         text: "вы кто такие? я вас не знаю. Access denied.");
                 }
-                else if (command.NeedsOpenAi && !State.CheckGPTCap(GptCapPerDay))
+                else if (command.CommandType == CommandType.GPT_Vision && !BotDb.CheckGptCapPerUser(Dalle3CapPerUser, message?.From?.Id ?? 0))
+                {
+                    await botClient.SendTextMessageAsync(chatId: message.Chat,
+                        replyToMessageId: update.Message.MessageId,
+                        text: $"Харэ, не больше {GptCapPerDay} запросов в Dall-3 на рыло за 24 часа.");
+                }
+                else if (command.CommandType != CommandType.None && !BotDb.CheckGptCap(GptCapPerDay))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
@@ -110,33 +112,12 @@ public class BotApp
                 {
                     await command.Action(message, msgText, this);
                 }
-                requestOpenAi = command.NeedsOpenAi;
                 handled = true;
+                processedCommand = command;
                 break;
             }
 
-            State.RecordMessage(message, requestOpenAi);
-
-            // Just for fun - keep chat history in the global chat in a trimmable variable (we're not saving it to the DB)
-            // We're going to keep it less than 8K tokens to be able to feed it to the GPT
-            if (!handled && message.Type == MessageType.Text && message.Chat == GoldChatId && 
-                message.From != null && !string.IsNullOrEmpty(message.From.Username))
-            {
-                string text = message.Text;
-                if (message.ReplyToMessage != null && message.ReplyToMessage.From != null &&
-                    !string.IsNullOrEmpty(message.ReplyToMessage.From.Username))
-                {
-                    // Who are you talking to?
-                    text = $"{message.ReplyToMessage.From.Username}, " + text;
-                }
-
-                CurrentCharView.Add($"[{message.From.Username}]: {text}");
-                if (CurrentCharView.Count > 10000)
-                {
-                    // To avoid memory leaks
-                    CurrentCharView.RemoveRange(0, 1000);
-                }
-            }
+            BotDb.RecordMessage(message, processedCommand?.CommandType ?? CommandType.None);
 
             // BotAdmin - just redirect msg to the golden chat (for fun)
             if (!handled && BotAdmins.Contains(message.Chat))

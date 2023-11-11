@@ -18,6 +18,15 @@ public class UserDb
     }
 }
 
+public enum CommandType
+{
+    None = 0,
+    GPT_Drawing,
+    GPT_Vision,
+    GPT_Audio,
+    GTP_Text
+}
+
 public class MessageDb
 {
     public Guid Id { get; set; }
@@ -25,8 +34,9 @@ public class MessageDb
     public long TelegramId { get; set; }
     public UserDb Author { get; set; }
     public DateTime Date { get; set; }
-    public MessageType Type {get; set; }
-    public bool IsGPT {get; set; }
+    public MessageType MessageType { get; set; }
+    public string MessageText { get; set; }
+    public CommandType CommandType { get; set; }
 }
 
 public class BotDbContext : DbContext
@@ -43,15 +53,23 @@ public class BotDbContext : DbContext
     }
 }
 
-public class BotState
+public class Database
 {
-    public void RecordMessage(Message msg, bool isGpt)
+    public Database()
+    {
+        using var ctx = new BotDbContext();
+        ctx.Initialize();
+    }
+
+    public void RecordMessage(Message msg, CommandType cmdType)
     {
         if (Constants.NoDB)
             return;
 
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
+
+        string msgText = msg.Text?.Trim('\r', '\n', '\t', ' ') ?? "";
 
         using var ctx = new BotDbContext();
         var author = ctx.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
@@ -74,25 +92,26 @@ public class BotState
                 Author = author,
                 ChatId = msg.Chat?.Id,
                 TelegramId = msg.MessageId,
-                IsGPT = isGpt,
-                Type = msg.Type,
+                MessageText = msgText,
+                MessageType = msg.Type, 
+                CommandType = cmdType,
                 Date = DateTime.UtcNow,
             });
         ctx.SaveChanges();
     }
 
-    public bool CheckGPTCap(int limit)
+    public bool CheckGptCap(int limit)
     {
         if (Constants.NoDB)
             return true;
 
         using var ctx = new BotDbContext();
         int count = ctx.Messages
-            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT == true);
+            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.CommandType != CommandType.None);
         return count < limit;
     }
 
-    public bool CheckDalleCap(int limit, long id)
+    public bool CheckGptCapPerUser(int limit, long id)
     {
         if (Constants.NoDB)
             return true;
@@ -102,7 +121,9 @@ public class BotState
 
         using var ctx = new BotDbContext();
         int count = ctx.Messages
-            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.IsGPT && m.Author.TelegramId == id);
+            .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && 
+                        (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) && 
+                        m.Author.TelegramId == id);
         return count < limit;
     }
 

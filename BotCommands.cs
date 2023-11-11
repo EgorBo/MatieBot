@@ -1,12 +1,11 @@
 ﻿using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs;
-using SixLabors.ImageSharp;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using static Constants;
 using File = System.IO.File;
+using Azure;
 
 namespace GoldChatBot;
 
@@ -16,33 +15,6 @@ public class BotCommands
 
     private static IEnumerable<Command> BuildCommands()
     {
-        // Number of users in GoldChat
-        yield return new Command(Name: "!users", 
-            Action: async (msg, trimmedMsg, botApp) =>
-            {
-                string stats = botApp.State.UserStats(GoldChatId);
-                await botApp.TgClient.ReplyAsync(msg, stats);
-            })
-            .ForAdmins().ForGoldChat();
-
-        // Top flooders last 24H
-        yield return new Command(Name: "!stats", AltName: "!daystats",
-            Action: async (msg, trimmedMsg, botApp) =>
-            {
-                string stats = botApp.State.DayStats(GoldChatId);
-                await botApp.TgClient.ReplyAsync(msg, stats);
-            })
-            .ForAdmins().ForGoldChat();
-
-        // Top flooders all time
-        yield return new Command(Name: "!globalstats", 
-            Action: async (msg, trimmedMsg, botApp) =>
-            {
-                string stats = botApp.State.GlobalStats(GoldChatId);
-                await botApp.TgClient.ReplyAsync(msg, stats);
-            })
-            .ForAdmins().ForGoldChat();
-
         // Ping-pong
         yield return new Command(Name: "!ping", 
             Action: async (msg, trimmedMsg, botApp) =>
@@ -61,7 +33,7 @@ public class BotCommands
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 var models = string.Join(", ", await botApp.OpenAi.GetAllModels());
-                await botApp.TgClient.ReplyAsync(msg, $"Models: {models}");
+                await botApp.TgClient.ReplyAsync(msg, $"ModelsResponse: {models}");
             });
 
         yield return new Command(Name: "!get_model",
@@ -70,8 +42,17 @@ public class BotCommands
                 await botApp.TgClient.ReplyAsync(msg, $"Current model: {OpenAiService.DefaultGptModel}");
             });
 
+        yield return new Command(Name: "!set_model",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    OpenAiService.DefaultGptModel = trimmedMsg.ToLower();
+                    botApp.OpenAi.NewContext(null);
+                    await botApp.TgClient.ReplyAsync(msg, "Default model is set to " + OpenAiService.DefaultGptModel);
+                })
+            .ForAdmins().ForGoldChat();
+
         // General GPT conversation
-        yield return new Command(Name: Constants.BotName, AltName: AltBotName, 
+        yield return new Command(Name: Constants.BotName, AltName: AltBotName, CommandType: CommandType.GTP_Text,
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 string gptResponse = await botApp.OpenAi.SendUserInputAsync(trimmedMsg);
@@ -99,46 +80,10 @@ public class BotCommands
             })
             .ForAdmins().ForGoldChat();
 
-        // General GPT conversation
-        yield return new Command(Name: "!summary",
-            Action: async (msg, trimmedMsg, botApp) =>
-            {
-                string gptResponse = await botApp.OpenAi.AnalyzeChatSummaryAsync(trimmedMsg, botApp.CurrentCharView);
-                await botApp.TgClient.ReplyAsync(msg, gptResponse);
-            })
-            .ForAdmins().ForGoldChat();
-
-        // General GPT conversation
-        yield return new Command(Name: "!analyze", 
+        yield return new Command(Name: "!tts_set_voice",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    string gptResponse = await botApp.OpenAi.CallModerationAsync(trimmedMsg);
-                    await botApp.TgClient.ReplyAsync(msg, gptResponse);
-                })
-            .ForAdmins().ForGoldChat();
-
-        // OpenAI completion
-        yield return new Command(Name: "!complete", 
-                Action: async (msg, trimmedMsg, botApp) =>
-                {
-                    string response = await botApp.OpenAi.CompletionAsync(trimmedMsg);
-                    await botApp.TgClient.ReplyAsync(msg, response);
-                })
-            .ForAdmins().ForGoldChat();
-
-        yield return new Command(Name: "!set_model", NeedsOpenAi: true,
-                Action: async (msg, trimmedMsg, botApp) =>
-                {
-                    OpenAiService.DefaultGptModel = trimmedMsg.Trim(' ', '\n', '\r', '\t').ToLower();
-                    botApp.OpenAi.NewContext(null);
-                    await botApp.TgClient.ReplyAsync(msg, "Default model is set to " + OpenAiService.DefaultGptModel);
-                })
-            .ForAdmins().ForGoldChat();
-
-        yield return new Command(Name: "!tts_set_voice", NeedsOpenAi: true,
-                Action: async (msg, trimmedMsg, botApp) =>
-                {
-                    string voice = trimmedMsg.Trim(' ', '\n', '\r', '\t').ToLower();
+                    string voice = trimmedMsg.ToLower();
                     if (voice != "alloy" &&
                         voice != "echo" &&
                         voice != "fable" &&
@@ -154,11 +99,10 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI TTS
-        yield return new Command(Name: "!tts", 
+        yield return new Command(Name: "!tts", CommandType: CommandType.GPT_Audio,
+                Description: "Text-to-speech using OpenAI",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
-
                     if (string.IsNullOrWhiteSpace(trimmedMsg) && msg.ReplyToMessage != null)
                     {
                         trimmedMsg = msg.ReplyToMessage.Text!.Trim(' ', '\n', '\r', '\t');
@@ -179,7 +123,8 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI TTS
-        yield return new Command(Name: "!stt", AltName: "!войсоблядь",
+        yield return new Command(Name: "!stt", CommandType: CommandType.GPT_Audio,
+                Description: "Speech-to-text using OpenAI",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string fileId = null;
@@ -203,7 +148,7 @@ public class BotCommands
                         await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
 
                     await using var fileStream = new FileStream(tmpLocalFile, FileMode.Open, FileAccess.Read);
-                    string responses = await botApp.OpenAi.VoiceToText(new StreamContent(fileStream));
+                    string responses = await botApp.OpenAi.SpeechToTextAsync(new StreamContent(fileStream));
 
                     await botApp.TgClient.ReplyAsync(msg, text: responses, parse: false);
 
@@ -212,12 +157,10 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
-        // OpenAI Vision API
-        yield return new Command(Name: "!vision", NeedsOpenAi: true,
+        // OpenAI GPT_Vision API
+        yield return new Command(Name: "!vision", AltName: "!describe", CommandType: CommandType.GPT_Drawing,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
-                    
                     Regex urlRegex = new Regex(@"(http[s]?://[^ \n\r]+)");
                     Match match = urlRegex.Match(trimmedMsg);
 
@@ -225,7 +168,7 @@ public class BotCommands
                     {
                         string firstUrl = match.Value;
                         trimmedMsg = trimmedMsg.Replace(firstUrl, "").Trim();
-                        var response = await botApp.OpenAi.VisionApiAsync(trimmedMsg, firstUrl, "high");
+                        var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, firstUrl, "high");
                         await botApp.TgClient.ReplyAsync(msg, text: response);
                     }
                     else if (msg.ReplyToMessage?.Photo?.Length > 0)
@@ -247,11 +190,10 @@ public class BotCommands
                         await blobClient.UploadAsync(uploadFileStream, true);
                         await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders { ContentType = "image/jpg" });
                         uploadFileStream.Close();
-                        await containerClient.SetAccessPolicyAsync(PublicAccessType.Blob);
                         string publicUrl = blobClient.Uri.AbsoluteUri;
 
-                        // Call OpenAI Vision API
-                        var response = await botApp.OpenAi.VisionApiAsync(trimmedMsg, publicUrl, detail: "high");
+                        // Call OpenAI GPT_Vision API
+                        var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, publicUrl, detail: "high");
                         await botApp.TgClient.ReplyAsync(msg, text: response);
 
                         // Clean up, don't bother removing it from Azure
@@ -265,10 +207,10 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
 
-        yield return new Command(Name: "!draw_set_style", NeedsOpenAi: true,
+        yield return new Command(Name: "!draw_set_style",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    string voice = trimmedMsg.Trim(' ', '\n', '\r', '\t').ToLower();
+                    string voice = trimmedMsg.ToLower();
                     if (voice != "vivid" &&
                         voice != "natural")
                     {
@@ -280,17 +222,10 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI drawing
-        yield return new Command(Name: "!draw", NeedsOpenAi: true,
+        yield return new Command(Name: "!draw", CommandType: CommandType.GPT_Drawing,
+                Description: "Generate an image using Dalle-3.",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    if (!botApp.State.CheckDalleCap(Dalle3CapPerUser, msg.From.Id))
-                    {
-                        await botApp.TgClient.ReplyAsync(msg, text: $"харэ, не больше {Dalle3CapPerUser} запросов на рыло за 24 часа.");
-                        return;
-                    }
-
-                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
-
                     var orientation = OpenAiService.Orientation.Square;
                     if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
                     {
@@ -304,8 +239,8 @@ public class BotCommands
                         trimmedMsg = trimmedMsg.Substring("portrait ".Length);
                     }
 
-                    var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(/* enable HD only for admins */ 
-                        BotAdmins.Contains(msg.From.Id), 
+                    var responses = await botApp.OpenAi.GenerateImageAsync(/* enable HD only for admins */ 
+                        BotAdmins.Contains(msg.From?.Id ?? 0), 
                         trimmedMsg.Trim(' '), 1, orientation);
                     if (responses.error != null)
                     {
@@ -322,18 +257,16 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
-
         // OpenAI drawing
-        yield return new Command(Name: "!!draw", NeedsOpenAi: true,
+        yield return new Command(Name: "!draw4", CommandType: CommandType.GPT_Drawing,
+                Description: "Generate 4 images at once using Dalle-3.",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
-                    if (!botApp.State.CheckDalleCap(Dalle3CapPerUser, msg.From.Id))
+                    if (!BotAdmins.Contains(msg.From?.Id))
                     {
-                        await botApp.TgClient.ReplyAsync(msg, text: $"харэ, не больше {Dalle3CapPerUser} запросов на рыло за 24 часа.");
+                        await botApp.TgClient.ReplyAsync(msg, text: "Эта команда пока только для админов.");
                         return;
                     }
-
-                    trimmedMsg = trimmedMsg.Trim(' ', '\n', '\r', '\t');
 
                     var orientation = OpenAiService.Orientation.Square;
                     if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
@@ -348,8 +281,51 @@ public class BotCommands
                         trimmedMsg = trimmedMsg.Substring("portrait ".Length);
                     }
 
-                    var responses = await botApp.OpenAi.GenerateImageAsync_Dalle3(/* enable HD only for admins */
-                        BotAdmins.Contains(msg.From.Id),
+                    var urls = new List<string>();
+                    await Parallel.ForEachAsync(new int[4], async (i, ct) =>
+                        {
+                            var responses = await botApp.OpenAi.GenerateImageAsync(
+                                false, trimmedMsg.Trim(' '), 1, orientation);
+
+                            string url = responses?.data?.FirstOrDefault()?.url ?? "";
+                            if (responses?.error == null && Uri.TryCreate(url, UriKind.Absolute, out _))
+                            {
+                                lock (urls)
+                                    urls.Add(url);
+                            }
+                        });
+
+                    if (urls.Count == 0)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "All attempts failed :(");
+                    }
+                    else
+                    {
+                        await botApp.TgClient.ReplyWithImagesAsync(msg, urls);
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
+        // OpenAI drawing
+        yield return new Command(Name: "!!draw", CommandType: CommandType.GPT_Drawing,
+                Description: "Generate an image using Dalle-3 (with exact prompt).",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    var orientation = OpenAiService.Orientation.Square;
+                    if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Landscape;
+                        trimmedMsg = trimmedMsg.Substring("landscape ".Length);
+                    }
+
+                    if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Portrait;
+                        trimmedMsg = trimmedMsg.Substring("portrait ".Length);
+                    }
+
+                    var responses = await botApp.OpenAi.GenerateImageAsync(/* enable HD only for admins */
+                        BotAdmins.Contains(msg.From?.Id ?? 0),
                         "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: " + trimmedMsg.Trim(' '), 1, orientation);
                     if (responses.error != null)
                     {
@@ -366,9 +342,8 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
-
         // OpenAI drawing (image variation)
-        yield return new Command(Name: "!vary", NeedsOpenAi: true,
+        yield return new Command(Name: "!vary", CommandType: CommandType.GPT_Drawing,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     if (msg.ReplyToMessage == null || msg.ReplyToMessage.Photo?.Length == 0)
@@ -390,11 +365,8 @@ public class BotCommands
                             await image.SaveAsync(pngFile);
                         }
 
-                        int count = int.TryParse(trimmedMsg, out int c) ? c : 1;
-                        count = Math.Clamp(count, 1, 3); // not more than 3 variations
-
                         await using var fileStream = new FileStream(pngFile, FileMode.Open, FileAccess.Read);
-                        string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream), count);
+                        string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream));
                         foreach (var response in responses)
                         {
                             if (!response.StartsWith("http", StringComparison.OrdinalIgnoreCase) ||
@@ -410,7 +382,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI drawing (image variation)
-        yield return new Command(Name: "!fill", NeedsOpenAi: true,
+        yield return new Command(Name: "!fill", CommandType: CommandType.GPT_Drawing,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     if (msg.ReplyToMessage == null || msg.ReplyToMessage.Document == null)
@@ -451,7 +423,6 @@ public class BotCommands
             })
             .ForAdmins().ForGoldChat();
 
-
         yield return new Command(Name: "!help", AltName: "!commands",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
@@ -461,7 +432,11 @@ public class BotCommands
                         help += cmd.Name;
                         if (!string.IsNullOrWhiteSpace(cmd.AltName))
                             help += $" (or {cmd.AltName})";
-                        help += "\n";
+                        
+                        if (string.IsNullOrWhiteSpace(cmd.Description))
+                            help += "\n";
+                        else
+                            help += $" - {cmd.Description}\n";
                     }
                     await botApp.TgClient.ReplyAsync(msg, help);
                 })
@@ -478,7 +453,8 @@ public enum CommandTrigger
 public record Command(string Name, 
     Func<Message, string, BotApp, Task> Action,
     string AltName = null,
-    bool NeedsOpenAi = false,
+    string Description = null,
+    CommandType CommandType = CommandType.None,
     CommandTrigger Trigger = CommandTrigger.StartsWith)
 {
     public IEnumerable<ChatId> AllowedChats { get; private set ; } = Array.Empty<ChatId>();
@@ -493,30 +469,5 @@ public record Command(string Name,
     {
         AllowedChats = AllowedChats.Concat(new [] { GoldChatId });
         return this;
-    }
-}
-
-public static class TelegramExtensions
-{
-    public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text, bool parse = true)
-    {
-        return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, parseMode: parse ? ParseMode.Markdown : null, text: text);
-    }
-
-    public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url, string caption = "")
-    {
-        var tmp = Path.GetTempFileName() + ".jpg";
-        await DownloadFileTaskAsync(new HttpClient(), new Uri(url), tmp);
-
-        await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, caption: caption,
-            photo: (InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))));
-    }
-
-
-    private static async Task DownloadFileTaskAsync(this HttpClient client, Uri uri, string file)
-    {
-        await using var s = await client.GetStreamAsync(uri);
-        await using var fs = new FileStream(file, FileMode.CreateNew);
-        await s.CopyToAsync(fs);
     }
 }
