@@ -86,6 +86,7 @@ public class Database
                 ChatId = msg.Chat?.Id,
                 FirstName = msg.From.FirstName,
                 LastName = msg.From.LastName,
+                Username = msg.From.Username,
             };
             ctx.Users.Add(author);
         }
