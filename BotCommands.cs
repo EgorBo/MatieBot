@@ -11,7 +11,7 @@ namespace GoldChatBot;
 
 public class BotCommands
 {
-    public static IEnumerable<Command> AllComands { get; } = BuildCommands();
+    public static IEnumerable<Command> AllCommands { get; } = BuildCommands();
 
     private static IEnumerable<Command> BuildCommands()
     {
@@ -222,6 +222,55 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI drawing
+        yield return new Command(Name: "!draw4", CommandType: CommandType.GPT_Drawing,
+                Description: "Generate 4 images at once using Dalle-3.",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (!BotAdmins.Contains(msg.From?.Id))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Эта команда пока только для админов.");
+                        return;
+                    }
+
+                    var orientation = OpenAiService.Orientation.Square;
+                    if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Landscape;
+                        trimmedMsg = trimmedMsg.Substring("landscape ".Length);
+                    }
+
+                    if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
+                    {
+                        orientation = OpenAiService.Orientation.Portrait;
+                        trimmedMsg = trimmedMsg.Substring("portrait ".Length);
+                    }
+
+                    var urls = new List<string>();
+                    await Parallel.ForEachAsync(new int[4], async (i, ct) =>
+                    {
+                        var responses = await botApp.OpenAi.GenerateImageAsync(
+                            false, trimmedMsg.Trim(' '), 1, orientation);
+
+                        string url = responses?.data?.FirstOrDefault()?.url ?? "";
+                        if (responses?.error == null && Uri.TryCreate(url, UriKind.Absolute, out _))
+                        {
+                            lock (urls)
+                                urls.Add(url);
+                        }
+                    });
+
+                    if (urls.Count == 0)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "All attempts failed :(");
+                    }
+                    else
+                    {
+                        await botApp.TgClient.ReplyWithImagesAsync(msg, urls);
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
+        // OpenAI drawing
         yield return new Command(Name: "!draw", CommandType: CommandType.GPT_Drawing,
                 Description: "Generate an image using Dalle-3.",
                 Action: async (msg, trimmedMsg, botApp) =>
@@ -253,55 +302,6 @@ public class BotCommands
                             //await botApp.TgClient.ReplyAsync(msg, text: "Revised prompt: " + response.revised_prompt);
                             await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
                         }
-                    }
-                })
-            .ForAdmins().ForGoldChat();
-
-        // OpenAI drawing
-        yield return new Command(Name: "!draw4", CommandType: CommandType.GPT_Drawing,
-                Description: "Generate 4 images at once using Dalle-3.",
-                Action: async (msg, trimmedMsg, botApp) =>
-                {
-                    if (!BotAdmins.Contains(msg.From?.Id))
-                    {
-                        await botApp.TgClient.ReplyAsync(msg, text: "Эта команда пока только для админов.");
-                        return;
-                    }
-
-                    var orientation = OpenAiService.Orientation.Square;
-                    if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
-                    {
-                        orientation = OpenAiService.Orientation.Landscape;
-                        trimmedMsg = trimmedMsg.Substring("landscape ".Length);
-                    }
-
-                    if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
-                    {
-                        orientation = OpenAiService.Orientation.Portrait;
-                        trimmedMsg = trimmedMsg.Substring("portrait ".Length);
-                    }
-
-                    var urls = new List<string>();
-                    await Parallel.ForEachAsync(new int[4], async (i, ct) =>
-                        {
-                            var responses = await botApp.OpenAi.GenerateImageAsync(
-                                false, trimmedMsg.Trim(' '), 1, orientation);
-
-                            string url = responses?.data?.FirstOrDefault()?.url ?? "";
-                            if (responses?.error == null && Uri.TryCreate(url, UriKind.Absolute, out _))
-                            {
-                                lock (urls)
-                                    urls.Add(url);
-                            }
-                        });
-
-                    if (urls.Count == 0)
-                    {
-                        await botApp.TgClient.ReplyAsync(msg, text: "All attempts failed :(");
-                    }
-                    else
-                    {
-                        await botApp.TgClient.ReplyWithImagesAsync(msg, urls);
                     }
                 })
             .ForAdmins().ForGoldChat();
@@ -427,7 +427,7 @@ public class BotCommands
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string help = "Commands:\n\n";
-                    foreach (var cmd in AllComands.OrderBy(c => c.Name))
+                    foreach (var cmd in AllCommands.OrderBy(c => c.Name))
                     {
                         help += cmd.Name;
                         if (!string.IsNullOrWhiteSpace(cmd.AltName))

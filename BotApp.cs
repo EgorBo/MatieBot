@@ -52,22 +52,22 @@ public class BotApp
 
             Command processedCommand = null;
             bool handled = false;
-            foreach (var command in BotCommands.AllComands)
+            foreach (var command in BotCommands.AllCommands)
             {
                 bool triggered = false;
                 switch (command.Trigger)
                 {
                     case CommandTrigger.StartsWith:
                     {
-                        if (msgText.StartsWith(command.Name + " ", StringComparison.OrdinalIgnoreCase))
+                        if (msgText.StartsWith(command.Name, StringComparison.OrdinalIgnoreCase))
                         {
-                            msgText = msgText.Substring(command.Name.Length + 1).Trim(' ', ',', '\r', '\n', '\t');
+                            msgText = msgText.Substring(command.Name.Length).Trim(' ', ',', '\r', '\n', '\t');
                             triggered = true;
                         }
                         else if (!string.IsNullOrWhiteSpace(command.AltName) &&
-                             msgText.StartsWith(command.AltName + " ", StringComparison.OrdinalIgnoreCase))
+                             msgText.StartsWith(command.AltName, StringComparison.OrdinalIgnoreCase))
                         {
-                            msgText = msgText.Substring(command.AltName.Length + 1).Trim(' ', ',', '\r', '\n', '\t');
+                            msgText = msgText.Substring(command.AltName.Length).Trim(' ', ',', '\r', '\n', '\t');
                                 triggered = true;
                         }
                         break;
