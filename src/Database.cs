@@ -163,4 +163,19 @@ public class Database
         }
         return false;
     }
+
+    public string GetLimits(string user)
+    {
+        using var ctx = new BotDbContext();
+        user = user?.Trim(' ')?.TrimStart('@') ?? "";
+        if (user.Length > 0)
+        {
+            var userObj = ctx.Users.FirstOrDefault(u => u.Username == user);
+            if (userObj == null)
+            {
+                return "User not found";
+            }
+        }
+        return "User not found";
+    }
 }

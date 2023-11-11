@@ -365,6 +365,14 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+        yield return new Command(Name: "!limits",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    await botApp.TgClient.ReplyAsync(msg, text: botApp.BotDb.GetLimits(
+                        string.IsNullOrWhiteSpace(trimmedMsg) ? msg.From?.Username : trimmedMsg));
+                })
+            .ForAdmins().ForGoldChat();
+
         // OpenAI drawing (image variation)
         yield return new Command(Name: "!vary", CommandType: CommandType.GPT_Drawing,
                 Action: async (msg, trimmedMsg, botApp) =>
