@@ -58,18 +58,12 @@ public class Database
 {
     public Database()
     {
-        if (!Constants.NoDB)
-        {
-            using var ctx = new BotDbContext();
-            ctx.Initialize();
-        }
+        using var ctx = new BotDbContext();
+        ctx.Initialize();
     }
 
     public void RecordMessage(Message msg, CommandType cmdType)
     {
-        if (Constants.NoDB)
-            return;
-
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
 
@@ -107,9 +101,6 @@ public class Database
 
     public bool CheckGptCap(int limit)
     {
-        if (Constants.NoDB)
-            return true;
-
         using var ctx = new BotDbContext();
         int count = ctx.Messages
             .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.CommandType != CommandType.None);
@@ -118,9 +109,6 @@ public class Database
 
     public bool CheckGptCapPerUser(long id)
     {
-        if (Constants.NoDB)
-            return true;
-
         if (Constants.BotAdmins.Contains(id))
             return true;
 
@@ -141,9 +129,6 @@ public class Database
 
     public bool SetDalle3Cap(string username, int newCap)
     {
-        if (Constants.NoDB)
-            return false;
-
         if (username?.StartsWith("@") == true)
             username = username.Substring(1);
 
@@ -170,7 +155,7 @@ public class Database
         user = user?.Trim(' ')?.TrimStart('@') ?? "";
         if (user.Length > 0)
         {
-            var userObj = ctx.Users.LastOrDefault(u => u.Username == user);
+            var userObj = ctx.Users.FirstOrDefault(u => u.Username == user);
             if (userObj == null)
             {
                 return "User not found";
@@ -187,7 +172,7 @@ public class Database
 
             int cap24 = userObj.Dalle3Cap;
 
-            return $"@{user} послал `{count24}` запроса в Dalle-3/Vision. Лимит: `{cap24}`. Таких же запросов за всё время: `{countAllTime}`.";
+            return $"Пользователь @{user} послал `{count24}` запроса(ов) в Dalle-3/Vision за 24 часа. Лимит: `{cap24}`. За всё время: `{countAllTime}`.";
         }
         return "User not found";
     }

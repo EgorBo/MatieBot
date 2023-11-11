@@ -95,23 +95,26 @@ public class BotApp
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
                         text: "вы кто такие? я вас не знаю. Access denied.");
+                    return;
                 }
-                else if (command.CommandType == CommandType.GPT_Vision && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? 0))
+                
+                if (command.CommandType == CommandType.GPT_Vision && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? 0))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
                         text: $"Харэ, не больше {GptCapPerDay} запросов в Dall-3 на рыло за 24 часа.");
+                    return;
                 }
-                else if (command.CommandType != CommandType.None && !BotDb.CheckGptCap(GptCapPerDay))
+                
+                if (command.CommandType != CommandType.None && !BotDb.CheckGptCap(GptCapPerDay))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
                         text: $"Харэ, не больше {GptCapPerDay} запросов в ChatGPT за 24 часа.");
+                    return;
                 }
-                else
-                {
-                    await command.Action(message, msgText, this);
-                }
+
+                await command.Action(message, msgText, this);
                 handled = true;
                 processedCommand = command;
                 break;
