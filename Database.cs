@@ -10,6 +10,7 @@ public class UserDb
     public string Username { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
+    public int Dalle3Cap { get; set; }
 
     public override string ToString()
     {
@@ -57,8 +58,11 @@ public class Database
 {
     public Database()
     {
-        using var ctx = new BotDbContext();
-        ctx.Initialize();
+        if (!Constants.NoDB)
+        {
+            using var ctx = new BotDbContext();
+            ctx.Initialize();
+        }
     }
 
     public void RecordMessage(Message msg, CommandType cmdType)
@@ -111,7 +115,7 @@ public class Database
         return count < limit;
     }
 
-    public bool CheckGptCapPerUser(int limit, long id)
+    public bool CheckGptCapPerUser(long id)
     {
         if (Constants.NoDB)
             return true;
@@ -120,62 +124,42 @@ public class Database
             return true;
 
         using var ctx = new BotDbContext();
+
+        var user = ctx.Users.FirstOrDefault(u => u.TelegramId == id);
+        if (user == null)
+        {
+            return false;
+        }
+
         int count = ctx.Messages
             .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && 
                         (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) && 
                         m.Author.TelegramId == id);
-        return count < limit;
+        return count < user.Dalle3Cap;
     }
 
-    public string DayStats(ChatId chatId)
+    public bool SetDalle3Cap(string username, int newCap)
     {
         if (Constants.NoDB)
-            return "<debug>";
+            return false;
 
-        if (chatId?.Identifier == null)
-            return "?";
+        if (username?.StartsWith("@") == true)
+            username = username.Substring(1);
 
+        bool success = false;
         using var ctx = new BotDbContext();
-        var stats = ctx.Messages
-            .Where(m => m.Date > DateTime.UtcNow.AddHours(-24) && m.Author != null && m.ChatId == chatId.Identifier.Value)
-            .GroupBy(g => g.Author)
-            .AsEnumerable() // SQLite ¯\_(ツ)_/¯
-            .OrderByDescending(g => g.Count())
-            .Take(10)
-            .Select((g, index) => $"{index + 1}) {g.Key} - {g.Count()}")
-            .ToArray();
-        return $"Стата по флудерам за 24 часа:\n\n{string.Join("\n", stats)}";
-    }
+        var users = ctx.Users.Where(u => u.Username == username).ToArray();
+        foreach (var user in users)
+        {
+            success = true;
+            user.Dalle3Cap = newCap;
+        }
 
-    public string GlobalStats(ChatId chatId)
-    {
-        if (Constants.NoDB)
-            return "<debug>";
-
-        if (chatId?.Identifier == null)
-            return "?";
-
-        using var ctx = new BotDbContext();
-        var stats = ctx.Messages
-            .Where(m => m.Author != null && m.ChatId == chatId.Identifier.Value)
-            .GroupBy(g => g.Author)
-            .AsEnumerable() // SQLite ¯\_(ツ)_/¯
-            .OrderByDescending(g => g.Count())
-            .Take(10)
-            .Select((g, index) => $"{index + 1}) {g.Key} - {g.Count()}")
-            .ToArray();
-        return $"Стата по флудерам за всё время:\n\n{string.Join("\n", stats)}";
-    }
-
-    public string UserStats(ChatId chatId)
-    {
-        if (Constants.NoDB)
-            return "<debug>";
-
-        if (chatId?.Identifier == null)
-            return "?";
-
-        using var ctx = new BotDbContext();
-        return $"У меня в базе {ctx.Users.Count(u => u.ChatId == chatId.Identifier.Value)} юзеров";
+        if (success)
+        {
+            ctx.SaveChanges();
+            return true;
+        }
+        return false;
     }
 }

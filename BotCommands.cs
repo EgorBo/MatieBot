@@ -342,6 +342,29 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
+        // OpenAI drawing
+        yield return new Command(Name: "!set_dalle3_cap",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (!BotAdmins.Contains(msg.From?.Id))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Куда ты лезешь?");
+                        return;
+                    }
+
+                    try
+                    {
+                        string[] parts = trimmedMsg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        bool success = botApp.BotDb.SetDalle3Cap(parts[0], int.Parse(parts[1]));
+                        await botApp.TgClient.ReplyAsync(msg, text: success ? "Done" : "User not found");
+                    }
+                    catch
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "syntax: !set_dalle3_cap <newcap>");
+                    }
+                })
+            .ForAdmins().ForGoldChat();
+
         // OpenAI drawing (image variation)
         yield return new Command(Name: "!vary", CommandType: CommandType.GPT_Drawing,
                 Action: async (msg, trimmedMsg, botApp) =>

@@ -96,7 +96,7 @@ public class BotApp
                         replyToMessageId: update.Message.MessageId,
                         text: "вы кто такие? я вас не знаю. Access denied.");
                 }
-                else if (command.CommandType == CommandType.GPT_Vision && !BotDb.CheckGptCapPerUser(Dalle3CapPerUser, message?.From?.Id ?? 0))
+                else if (command.CommandType == CommandType.GPT_Vision && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? 0))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
