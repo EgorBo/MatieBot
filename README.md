@@ -1,0 +1,1 @@
+Just some personal Telegram bot with OpenAI integration
