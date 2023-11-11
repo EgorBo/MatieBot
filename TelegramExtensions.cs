@@ -9,7 +9,8 @@ public static class TelegramExtensions
 {
     public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text, bool parse = true)
     {
-        return client.SendTextMessageAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, parseMode: parse ? ParseMode.Markdown : null, text: text);
+        return client.SendTextMessageAsync(chatId: msg.Chat, 
+            replyToMessageId: msg.MessageId, parseMode: parse ? ParseMode.Markdown : null, text: text);
     }
 
     public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url, string caption = "")

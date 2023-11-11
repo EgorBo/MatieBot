@@ -452,9 +452,9 @@ public class BotCommands
                     string help = "Commands:\n\n";
                     foreach (var cmd in AllCommands.OrderBy(c => c.Name))
                     {
-                        help += cmd.Name;
+                        help += $"`{cmd.Name}`";
                         if (!string.IsNullOrWhiteSpace(cmd.AltName))
-                            help += $" (or {cmd.AltName})";
+                            help += $" (or `{cmd.AltName}`)";
                         
                         if (string.IsNullOrWhiteSpace(cmd.Description))
                             help += "\n";
