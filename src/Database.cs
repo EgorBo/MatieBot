@@ -109,9 +109,6 @@ public class Database
 
     public bool CheckGptCapPerUser(long id)
     {
-        if (Constants.BotAdmins.Contains(id))
-            return true;
-
         using var ctx = new BotDbContext();
 
         var user = ctx.Users.FirstOrDefault(u => u.TelegramId == id);
