@@ -38,6 +38,7 @@ public class MessageDb
     public MessageType MessageType { get; set; }
     public string MessageText { get; set; }
     public CommandType CommandType { get; set; }
+    public double EstimatedCost { get; set; }
 }
 
 public class BotDbContext : DbContext
@@ -62,7 +63,7 @@ public class Database
         ctx.Initialize();
     }
 
-    public void RecordMessage(Message msg, CommandType cmdType)
+    public void RecordMessage(Message msg, CommandType cmdType, CommandResult cmdResult)
     {
         if (msg?.From == null || msg.Type != MessageType.Text)
             return;
@@ -80,6 +81,7 @@ public class Database
                 ChatId = msg.Chat?.Id,
                 FirstName = msg.From.FirstName,
                 LastName = msg.From.LastName,
+                Dalle3Cap = Constants.Dalle3CapPerUser,
                 Username = msg.From.Username,
             };
             ctx.Users.Add(author);
@@ -94,6 +96,7 @@ public class Database
                 MessageText = msgText,
                 MessageType = msg.Type, 
                 CommandType = cmdType,
+                EstimatedCost = cmdResult.EstimatedCost,
                 Date = DateTime.UtcNow,
             });
         ctx.SaveChanges();
@@ -169,7 +172,7 @@ public class Database
 
             int cap24 = userObj.Dalle3Cap;
 
-            return $"Пользователь @{user} послал `{count24}` запроса(ов) в Dalle-3/Vision за 24 часа. Лимит: `{cap24}`. За всё время: `{countAllTime}`.";
+            return $"Пользователь `{user}` послал `{count24}` запроса(ов) в Dalle-3/Vision за 24 часа. Лимит: `{cap24}`. За всё время: `{countAllTime}`.";
         }
         return "User not found";
     }

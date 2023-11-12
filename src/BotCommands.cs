@@ -17,6 +17,7 @@ public class BotCommands
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 await botApp.TgClient.ReplyAsync(msg, "pong!");
+                return default;
             });
 
         // uptime
@@ -24,6 +25,7 @@ public class BotCommands
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 await botApp.TgClient.ReplyAsync(msg, $"{(DateTime.UtcNow - botApp.StartDate).TotalDays:F0} дней.");
+                return default;
             });
 
         // quit
@@ -37,6 +39,7 @@ public class BotCommands
                 {
                         Environment.FailFast("quit command");
                     });
+                return default;
             }).ForAdmins();
 
         yield return new Command(Name: "!models",
@@ -44,12 +47,14 @@ public class BotCommands
             {
                 var models = string.Join(", ", await botApp.OpenAi.GetAllModels());
                 await botApp.TgClient.ReplyAsync(msg, $"ModelsResponse: {models}");
+                return default;
             });
 
         yield return new Command(Name: "!get_model",
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 await botApp.TgClient.ReplyAsync(msg, $"Current model: {OpenAiService.DefaultGptModel}");
+                return default;
             });
 
         yield return new Command(Name: "!set_model",
@@ -58,6 +63,7 @@ public class BotCommands
                     OpenAiService.DefaultGptModel = trimmedMsg.ToLower();
                     botApp.OpenAi.NewContext(null);
                     await botApp.TgClient.ReplyAsync(msg, "Default model is set to " + OpenAiService.DefaultGptModel);
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -67,6 +73,7 @@ public class BotCommands
             {
                 string gptResponse = await botApp.OpenAi.SendUserInputAsync(trimmedMsg);
                 await botApp.TgClient.ReplyAsync(msg, gptResponse);
+                return default;
             })
             .ForAdmins().ForGoldChat();
 
@@ -87,6 +94,7 @@ public class BotCommands
                     "I'll remind you by saying \"stay in character!\"";
                 botApp.OpenAi.NewContext(query);
                 await botApp.TgClient.ReplyAsync(msg, "Ок, буду лить базу");
+                return default;
             })
             .ForAdmins().ForGoldChat();
 
@@ -102,9 +110,10 @@ public class BotCommands
                         voice != "shimmer")
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Must be one of these: alloy, echo, fable, onyx, nova, and shimmer.");
-                        return;
+                        return default;
                     }
                     OpenAiService.DefaultVoice = voice;
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -129,6 +138,7 @@ public class BotCommands
                             audio: InputFile.FromStream(File.OpenRead(response), "generated_voice.mp3"));
                         File.Delete(response);
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -149,7 +159,7 @@ public class BotCommands
                     else
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Не вижу войса/аудио файла, сделай на них реплай.");
-                        return;
+                        return default;
                     }
 
                     var fileInfo = await botApp.TgClient.GetFileAsync(fileId);
@@ -164,6 +174,7 @@ public class BotCommands
 
                     // Clean up
                     File.Delete(tmpLocalFile);
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -213,6 +224,7 @@ public class BotCommands
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Не вижу картинку, либо гони урл либо реплай на мессадж с картинкой.");
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -225,9 +237,10 @@ public class BotCommands
                         voice != "natural")
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Must be one of these: vivid or natural");
-                        return;
+                        return default;
                     }
                     OpenAiService.DefaultStyle = voice;
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -239,7 +252,7 @@ public class BotCommands
                     if (!BotAdmins.Contains(msg.From?.Id))
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Эта команда пока только для админов.");
-                        return;
+                        return default;
                     }
 
                     var urls = new List<string>();
@@ -264,6 +277,7 @@ public class BotCommands
                     {
                         await botApp.TgClient.ReplyWithImagesAsync(msg, urls);
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -300,6 +314,7 @@ public class BotCommands
                             await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
                         }
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -336,6 +351,7 @@ public class BotCommands
                             await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
                         }
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -346,7 +362,7 @@ public class BotCommands
                     if (!BotAdmins.Contains(msg.From?.Id))
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Куда ты лезешь?");
-                        return;
+                        return default;
                     }
 
                     try
@@ -359,6 +375,7 @@ public class BotCommands
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "syntax: !set_dalle3_cap <newcap>");
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -367,6 +384,7 @@ public class BotCommands
                 {
                     await botApp.TgClient.ReplyAsync(msg, text: botApp.BotDb.GetLimits(
                         string.IsNullOrWhiteSpace(trimmedMsg) ? msg.From?.Username : trimmedMsg));
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -406,6 +424,7 @@ public class BotCommands
                         File.Delete(pngFile);
                         File.Delete(jpgFile);
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -439,6 +458,7 @@ public class BotCommands
                         }
                         File.Delete(pngFile);
                     }
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
 
@@ -447,7 +467,8 @@ public class BotCommands
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 botApp.OpenAi.NewContext(trimmedMsg);
-                await botApp.TgClient.ReplyAsync(msg, text: "🫡");
+                await botApp.TgClient.ReplyAsync(msg, text: "Ok 🫡");
+                return default;
             })
             .ForAdmins().ForGoldChat();
 
@@ -467,6 +488,7 @@ public class BotCommands
                             help += $" - {cmd.Description}\n";
                     }
                     await botApp.TgClient.ReplyAsync(msg, help);
+                    return default;
                 })
             .ForAdmins().ForGoldChat();
     }
@@ -478,8 +500,13 @@ public enum CommandTrigger
     Contains
 }
 
+public struct CommandResult
+{
+    public double EstimatedCost { get; set; }
+}
+
 public record Command(string Name, 
-    Func<Message, string, BotApp, Task> Action,
+    Func<Message, string, BotApp, Task<CommandResult>> Action,
     string AltName = null,
     string Description = null,
     CommandType CommandType = CommandType.None,
@@ -498,4 +525,8 @@ public record Command(string Name,
         AllowedChats = AllowedChats.Concat(new [] { GoldChatId });
         return this;
     }
+
+    public bool IsDalle3 => 
+        CommandType == CommandType.GPT_Drawing ||
+        CommandType == CommandType.GPT_Vision;
 }

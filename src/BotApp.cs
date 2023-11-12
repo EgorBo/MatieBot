@@ -51,6 +51,7 @@ public class BotApp
                 return;
 
             Command processedCommand = null;
+            CommandResult commandResult = default;
             bool handled = false;
             foreach (var command in BotCommands.AllCommands)
             {
@@ -98,7 +99,7 @@ public class BotApp
                     return;
                 }
                 
-                if (command.CommandType == CommandType.GPT_Vision && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? 0))
+                if (command.IsDalle3 && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? 0))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
@@ -110,17 +111,17 @@ public class BotApp
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
-                        text: $"Харэ, не больше {GptCapPerDay} запросов в ChatGPT за 24 часа.");
+                        text: $"Харэ, не больше {GptCapPerDay} запросов в OpenAI за 24 часа на всех.");
                     return;
                 }
 
-                await command.Action(message, msgText, this);
+                commandResult = await command.Action(message, msgText, this);
                 handled = true;
                 processedCommand = command;
                 break;
             }
 
-            BotDb.RecordMessage(message, processedCommand?.CommandType ?? CommandType.None);
+            BotDb.RecordMessage(message, processedCommand?.CommandType ?? CommandType.None, commandResult);
 
             // BotAdmin - just redirect msg to the golden chat (for fun)
             if (!handled && BotAdmins.Contains(message.Chat))
