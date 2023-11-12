@@ -5,9 +5,6 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using static Constants;
 using File = System.IO.File;
-using Azure;
-
-namespace GoldChatBot;
 
 public class BotCommands
 {
@@ -28,6 +25,19 @@ public class BotCommands
             {
                 await botApp.TgClient.ReplyAsync(msg, $"{(DateTime.UtcNow - botApp.StartDate).TotalDays:F0} дней.");
             });
+
+        // quit
+        yield return new Command(Name: "!quit",
+            Action: async (msg, trimmedMsg, botApp) =>
+            {
+                await botApp.TgClient.ReplyAsync(msg, "OK :(");
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                Task.Delay(1000).ContinueWith(_ =>
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                {
+                        Environment.FailFast("quit command");
+                    });
+            }).ForAdmins();
 
         yield return new Command(Name: "!models",
             Action: async (msg, trimmedMsg, botApp) =>
@@ -232,24 +242,11 @@ public class BotCommands
                         return;
                     }
 
-                    var orientation = OpenAiService.Orientation.Square;
-                    if (trimmedMsg.StartsWith("landscape", StringComparison.OrdinalIgnoreCase))
-                    {
-                        orientation = OpenAiService.Orientation.Landscape;
-                        trimmedMsg = trimmedMsg.Substring("landscape ".Length);
-                    }
-
-                    if (trimmedMsg.StartsWith("portrait", StringComparison.OrdinalIgnoreCase))
-                    {
-                        orientation = OpenAiService.Orientation.Portrait;
-                        trimmedMsg = trimmedMsg.Substring("portrait ".Length);
-                    }
-
                     var urls = new List<string>();
                     await Parallel.ForEachAsync(new int[4], async (i, ct) =>
                     {
                         var responses = await botApp.OpenAi.GenerateImageAsync(
-                            false, trimmedMsg.Trim(' '), 1, orientation);
+                            isHd: false, prompt: trimmedMsg);
 
                         string url = responses?.data?.FirstOrDefault()?.url ?? "";
                         if (responses?.error == null && Uri.TryCreate(url, UriKind.Absolute, out _))

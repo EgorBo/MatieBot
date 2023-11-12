@@ -3,8 +3,6 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using File = System.IO.File;
 
-namespace GoldChatBot;
-
 public static class TelegramExtensions
 {
     public static Task ReplyAsync(this ITelegramBotClient client, Message msg, string text, bool parse = true)

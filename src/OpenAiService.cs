@@ -1,36 +1,20 @@
-﻿using OpenAI_API;
+﻿using System.Net.Http.Headers;
+using System.Text;
+using Newtonsoft.Json;
+using OpenAI_API;
 using OpenAI_API.Chat;
 using OpenAI_API.Models;
-using System.Net.Http.Headers;
-using Newtonsoft.Json;
-using System.Text;
 
 public class OpenAiService
 {
-    private OpenAIAPI _openAi;
+    private readonly OpenAIAPI _openAi = new(Constants.OpenAiToken) { HttpClientFactory = new HttpClientFactory() };
     private Conversation _conversation;
-    private string _systemMsg;
-
-    public OpenAiService()
-    {
-        _openAi = new OpenAIAPI(Constants.OpenAiToken)
-        {
-            HttpClientFactory = new HttpClientFactory()
-        };
-    }
-
-    public async Task InitAsync(string systemMessage)
-    {
-        _openAi = new OpenAIAPI(Constants.OpenAiToken);
-        _openAi.HttpClientFactory = new HttpClientFactory();
-        _systemMsg = systemMessage;
-        NewContext(_systemMsg);
-    }
 
     public void NewContext(string context) => _conversation = CreateContext(_openAi, context);
 
     public static string DefaultGptModel { get; set; } = "gpt-4";
     public static string DefaultVoice { get; set; } = "alloy";
+    public static string DefaultStyle { get; set; } = "vivid";
 
     public static Conversation CreateContext(OpenAIAPI openAi, string context)
     {
@@ -97,9 +81,7 @@ public class OpenAiService
         }
     }
 
-    public static string DefaultStyle = "vivid";
-
-    public async Task<ImageGenerationResponse> GenerateImageAsync(bool isHd, string prompt, int count, Orientation orientation)
+    public async Task<ImageGenerationResponse> GenerateImageAsync(bool isHd, string prompt, int count = 1, Orientation orientation = Orientation.Square)
     {
         try
         {
@@ -144,18 +126,19 @@ public class OpenAiService
     {
         try
         {
+            _conversation ??= CreateContext(_openAi, Constants.ChatGptSystemMessage);
             _conversation.AppendUserInput(prompt);
             return await _conversation.GetResponseFromChatbotAsync();
         }
         catch (HttpRequestException e)
         {
             // I'm too lazy to extract error codes
-            if (e.Message.Contains("This model's maximum context length"))
+            if (e.Message.Contains("maximum context length"))
             {
                 // Spawn a new chat context and try again
                 _conversation = _openAi.Chat.CreateConversation();
                 _conversation.Model = new Model(DefaultGptModel);
-                _conversation.AppendSystemMessage(_systemMsg);
+                _conversation.AppendSystemMessage(Constants.ChatGptSystemMessage);
                 return "Лимит по токенам, пересоздаю контекст";
             }
             throw;

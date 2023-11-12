@@ -1,5 +1,4 @@
-﻿using GoldChatBot;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -26,7 +25,6 @@ public class BotApp
         Cts = cts;
         BotDb = new Database();
         OpenAi = new OpenAiService();
-        await OpenAi.InitAsync(ChatGptSystemMessage);
         TgClient = new TelegramBotClient(TelegramToken);
         BotUser = await TgClient.GetMeAsync(cancellationToken: cts.Token);
         Console.WriteLine($"Started as {BotUser.Username}");
@@ -34,7 +32,9 @@ public class BotApp
             updateHandler: (c, u, ct) =>
             {
                 // Don't block updateHandler
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 ThreadPool.QueueUserWorkItem(_ => HandleUpdateAsync(c, u, ct));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 return Task.CompletedTask;
             },
             pollingErrorHandler: HandlePollingErrorAsync,
