@@ -173,12 +173,12 @@ public class Database
             .Select(i => new { User = i.Key.Username, Count = i.Count() })
             .ToArray() // SQLite fails without this
             .OrderByDescending(i => i.Count)
-            .Take(15)
+            .Take(10)
             .ToArray();
 
         string result = "";
         for (var i = 0; i < users.Length; i++)
-            result += $"`{i+1:2}) {users[i].User}` - {users[i].Count} запросов\n";
+            result += $"{i+1:2}) `{users[i].User}` - {users[i].Count} запросов\n";
         return result;
     }
 
