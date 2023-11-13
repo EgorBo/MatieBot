@@ -176,7 +176,7 @@ public class Database
             .Take(10);
 
         int pos = 1;
-        return users.Aggregate("", (current, user) => current + $"`{pos++:2}) {user.User}` - {user.Count} запросов");
+        return users.Aggregate("", (current, user) => current + $"`{pos++:2}) {user.User}` - {user.Count} запросов\n");
     }
 
     public string GetLimits(string user)
