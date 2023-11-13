@@ -163,6 +163,22 @@ public class Database
         return false;
     }
 
+    public string GetDalle3Stats()
+    {
+        using var ctx = new BotDbContext();
+
+        var users = ctx.Messages
+            .Where(m => m.CommandType == CommandType.GPT_Vision || m.CommandType == CommandType.GPT_Drawing)
+            .GroupBy(m => m.Author)
+            .Select(i => new { User = i.Key.Username, Count = i.Count() })
+            .ToArray() // SQLite fails without this
+            .OrderByDescending(i => i.Count)
+            .Take(10);
+
+        int pos = 1;
+        return users.Aggregate("", (current, user) => current + $"`{pos++:2}) {user.User}` - {user.Count} запросов");
+    }
+
     public string GetLimits(string user)
     {
         using var ctx = new BotDbContext();

@@ -472,6 +472,16 @@ public class BotCommands
             })
             .ForAdmins().ForGoldChat();
 
+        // Custom context for GPT
+        yield return new Command(Name: "!dalle",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    await botApp.TgClient.ReplyAsync(msg, text:
+                        $"Статистка использования Dall-E 3 по юзерам:\n\n{botApp.BotDb.GetDalle3Stats()}");
+                    return default;
+                })
+            .ForAdmins().ForGoldChat();
+
         yield return new Command(Name: "!help", AltName: "!commands",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
