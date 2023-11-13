@@ -47,6 +47,11 @@ public class BotApp
     {
         try
         {
+            if (update.Message?.From != null)
+            {
+                BotDb.EnsureUserExists(update.Message.From);
+            }
+            
             if (update.Message is not { Text: { } msgText } message)
                 return;
 
@@ -101,17 +106,13 @@ public class BotApp
 
                 if (command.IsDalle3 && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? -1, out int limit))
                 {
-                    await botClient.SendTextMessageAsync(chatId: message.Chat,
-                        replyToMessageId: update.Message.MessageId,
-                        text: $"Харэ, не больше `{limit}` запросов к Dall-e 3 на рыло за 24 часа, используй команду`!limits`.");
+                    await botClient.ReplyAsync(message, text: $"Харэ, не больше `{limit}` запросов к Dall-e 3 на рыло за 24 часа, используй команду`!limits`.");
                     return;
                 }
                 
                 if (command.CommandType != CommandType.None && !BotDb.CheckGptCap(GptCapPerDay))
                 {
-                    await botClient.SendTextMessageAsync(chatId: message.Chat,
-                        replyToMessageId: update.Message.MessageId,
-                        text: $"Харэ, не больше {GptCapPerDay} запросов в OpenAI за 24 часа на всех.");
+                    await botClient.ReplyAsync(message, text: $"Харэ, не больше `{GptCapPerDay}` любых запросов в OpenAI за 24 часа на всех.");
                     return;
                 }
 

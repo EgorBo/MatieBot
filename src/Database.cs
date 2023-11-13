@@ -5,12 +5,13 @@ using Telegram.Bot.Types.Enums;
 public class UserDb
 {
     public Guid Id { get; set; }
-    public long? ChatId { get; set; }
     public long TelegramId { get; set; }
     public string Username { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public int Dalle3Cap { get; set; }
+    public bool IsBot { get; set; }
+    public bool? IsPremium { get; set; }
 
     public override string ToString()
     {
@@ -62,29 +63,42 @@ public class Database
         ctx.Initialize();
     }
 
-    public void RecordMessage(Message msg, CommandType cmdType, CommandResult cmdResult)
+    public void EnsureUserExists(User user)
     {
-        if (msg?.From == null)
-            return;
-
-        string msgText = msg.Text?.Trim('\r', '\n', '\t', ' ') ?? "";
-
         using var ctx = new BotDbContext();
-        var author = ctx.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
+        var author = ctx.Users.FirstOrDefault(u => u.TelegramId == user.Id);
         if (author == null)
         {
             author = new UserDb
             {
                 Id = Guid.NewGuid(),
-                TelegramId = msg.From.Id,
-                ChatId = msg.Chat?.Id,
-                FirstName = msg.From.FirstName,
-                LastName = msg.From.LastName,
+                TelegramId = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Dalle3Cap = Constants.Dalle3CapPerUser,
-                Username = msg.From.Username,
+                Username = user.Username,
+                IsBot = user.IsBot,
+                IsPremium = user.IsPremium,
             };
             ctx.Users.Add(author);
         }
+        else
+        {
+            // TODO: update info
+        }
+        ctx.SaveChanges();
+    }
+
+    public void RecordMessage(Message msg, CommandType cmdType, CommandResult cmdResult)
+    {
+        if (msg?.From == null)
+            return;
+        EnsureUserExists(msg.From);
+
+        string msgText = msg.Text?.Trim('\r', '\n', '\t', ' ') ?? "";
+
+        using var ctx = new BotDbContext();
+        var author = ctx.Users.FirstOrDefault(u => u.TelegramId == msg.From.Id);
         ctx.Messages.Add(
             new MessageDb
             {
