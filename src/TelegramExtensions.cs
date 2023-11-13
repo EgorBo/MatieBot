@@ -51,7 +51,7 @@ public static class TelegramExtensions
             {
                 var tmp = Path.GetTempFileName() + ".jpg";
                 await DownloadFileTaskAsync(new Uri(url), tmp);
-                await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, caption: caption, hasSpoiler: true,
+                await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, caption: caption,
                     photo: (InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))));
                 File.Delete(tmp);
             }
