@@ -32,7 +32,6 @@ public class MessageDb
 {
     public Guid Id { get; set; }
     public long? ChatId { get; set; }
-    public long TelegramId { get; set; }
     public UserDb Author { get; set; }
     public DateTime Date { get; set; }
     public MessageType MessageType { get; set; }
@@ -65,7 +64,7 @@ public class Database
 
     public void RecordMessage(Message msg, CommandType cmdType, CommandResult cmdResult)
     {
-        if (msg?.From == null || msg.Type != MessageType.Text)
+        if (msg?.From == null)
             return;
 
         string msgText = msg.Text?.Trim('\r', '\n', '\t', ' ') ?? "";
@@ -92,7 +91,6 @@ public class Database
                 Id = Guid.NewGuid(),
                 Author = author,
                 ChatId = msg.Chat?.Id,
-                TelegramId = msg.MessageId,
                 MessageText = msgText,
                 MessageType = msg.Type, 
                 CommandType = cmdType,
@@ -110,13 +108,14 @@ public class Database
         return count < limit;
     }
 
-    public bool CheckGptCapPerUser(long id)
+    public bool CheckGptCapPerUser(long id, out int limit)
     {
         using var ctx = new BotDbContext();
 
         var user = ctx.Users.FirstOrDefault(u => u.TelegramId == id);
         if (user == null)
         {
+            limit = -1;
             return false;
         }
 
@@ -124,6 +123,7 @@ public class Database
             .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && 
                         (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) && 
                         m.Author.TelegramId == id);
+        limit = user.Dalle3Cap;
         return count < user.Dalle3Cap;
     }
 
@@ -158,22 +158,22 @@ public class Database
             var userObj = ctx.Users.FirstOrDefault(u => u.Username == user);
             if (userObj == null)
             {
-                return "User not found";
+                return $"Пользователь '{user}' не найден";
             }
 
+            DateTime date = DateTime.UtcNow.AddHours(-24);
             int count24 = ctx.Messages.Count(m => 
-                m.Date > DateTime.UtcNow.AddHours(-24) &&
+                m.Date > date &&
                 (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) &&
-                m.Author.TelegramId == userObj.TelegramId);
+                m.Author == userObj);
 
             int countAllTime = ctx.Messages.Count(m =>
                 (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) &&
-                m.Author.TelegramId == userObj.TelegramId);
+                m.Author == userObj);
 
             int cap24 = userObj.Dalle3Cap;
-
             return $"Пользователь `{user}` послал `{count24}` запроса(ов) в Dalle-3/Vision за 24 часа. Лимит: `{cap24}`. За всё время: `{countAllTime}`.";
         }
-        return "User not found";
+        return $"Пользователь '{user}' не найден";
     }
 }

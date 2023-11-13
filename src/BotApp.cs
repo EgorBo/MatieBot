@@ -98,12 +98,12 @@ public class BotApp
                         text: "вы кто такие? я вас не знаю. Access denied.");
                     return;
                 }
-                
-                if (command.IsDalle3 && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? 0))
+
+                if (command.IsDalle3 && !BotDb.CheckGptCapPerUser(message?.From?.Id ?? -1, out int limit))
                 {
                     await botClient.SendTextMessageAsync(chatId: message.Chat,
                         replyToMessageId: update.Message.MessageId,
-                        text: $"Харэ, не больше {GptCapPerDay} запросов в Dall-3 на рыло за 24 часа.");
+                        text: $"Харэ, не больше `{limit}` запросов к Dall-e 3 на рыло за 24 часа, используй команду`!limits`.");
                     return;
                 }
                 

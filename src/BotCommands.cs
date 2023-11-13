@@ -356,7 +356,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // OpenAI drawing
-        yield return new Command(Name: "!set_dalle3_cap",
+        yield return new Command(Name: "!set_dalle3_cap", AltName: "!set_limit",
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     if (!BotAdmins.Contains(msg.From?.Id))
