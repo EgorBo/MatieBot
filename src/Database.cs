@@ -178,7 +178,7 @@ public class Database
 
         string result = "";
         for (var i = 0; i < users.Length; i++)
-            result += $"{i+1:2}) `{users[i].User}` - {users[i].Count} запросов\n";
+            result += $"{i+1}) `{users[i].User}` - {users[i].Count} запросов\n";
         return result;
     }
 
