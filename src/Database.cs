@@ -173,10 +173,16 @@ public class Database
             .Select(i => new { User = i.Key.Username, Count = i.Count() })
             .ToArray() // SQLite fails without this
             .OrderByDescending(i => i.Count)
-            .Take(10);
+            .Take(15)
+            .ToArray();
 
-        int pos = 1;
-        return users.Aggregate("", (current, user) => current + $"`{pos++:2}) {user.User}` - {user.Count} запросов\n");
+        string result = "";
+        for (var i = 0; i < users.Length; i++)
+        {
+            var user = users[i];
+            result += $"`{i+1:2}) {user.User}` - {user.Count} запросов\n";
+        }
+        return result;
     }
 
     public string GetLimits(string user)
