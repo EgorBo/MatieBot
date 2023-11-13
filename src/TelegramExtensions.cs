@@ -74,8 +74,8 @@ public static class TelegramExtensions
                 tmps.Add(tmp);
             }
 
-            var media = tmps.Select(t =>
-                new InputMediaPhoto(InputFile.FromStream(File.OpenRead(t), "photo.jpg"))).ToArray();
+            var media = tmps.Select((tmp, index) =>
+                new InputMediaPhoto(InputFile.FromStream(File.OpenRead(tmp), $"photo{index}.jpg"))).ToArray();
             await client.SendMediaGroupAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, media: media);
             tmps.ForEach(File.Delete);
         });
