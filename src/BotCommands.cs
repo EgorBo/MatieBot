@@ -310,8 +310,7 @@ public class BotCommands
                     {
                         foreach (var response in responses.data)
                         {
-                            //await botApp.TgClient.ReplyAsync(msg, text: "Revised prompt: " + response.revised_prompt);
-                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url); //response.revised_prompt);
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
                         }
                     }
                     return default;
