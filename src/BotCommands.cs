@@ -310,7 +310,7 @@ public class BotCommands
                     {
                         foreach (var response in responses.data)
                         {
-                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, botApp.ShowRevisedPrompt ? response.revised_prompt : null);
                         }
                     }
                     return default;
@@ -346,8 +346,7 @@ public class BotCommands
                     {
                         foreach (var response in responses.data)
                         {
-                            //await botApp.TgClient.ReplyAsync(msg, text: "Revised prompt: " + response.revised_prompt);
-                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, response.revised_prompt);
+                            await botApp.TgClient.ReplyWithImageAsync(msg, response.url, botApp.ShowRevisedPrompt ? response.revised_prompt : null);
                         }
                     }
                     return default;
@@ -374,6 +373,15 @@ public class BotCommands
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "syntax: !set_dalle3_cap <newcap>");
                     }
+                    return default;
+                })
+            .ForAdmins().ForGoldChat();
+        
+        yield return new Command(Name: "!show_revised_prompt",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    botApp.ShowRevisedPrompt =
+                        !(trimmedMsg == "0" || trimmedMsg.Equals("false", StringComparison.OrdinalIgnoreCase));
                     return default;
                 })
             .ForAdmins().ForGoldChat();

@@ -41,8 +41,6 @@ public static class TelegramExtensions
         });
     }
     
-    
-
     public static async Task ReplyWithImageAsync(this ITelegramBotClient client, Message msg, string url, string caption = "")
     {
         await WithRetry(async () =>
@@ -51,7 +49,7 @@ public static class TelegramExtensions
             {
                 var tmp = Path.GetTempFileName() + ".jpg";
                 await DownloadFileTaskAsync(new Uri(url), tmp);
-                await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, //caption: caption,
+                await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, caption: caption,
                     photo: (InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))));
                 File.Delete(tmp);
             }

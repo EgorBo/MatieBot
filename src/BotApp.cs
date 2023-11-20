@@ -19,6 +19,7 @@ public class BotApp
     public Database BotDb { get; private set; }
     public CancellationTokenSource Cts { get; private set; }
     public DateTime StartDate { get; } = DateTime.UtcNow;
+    public bool ShowRevisedPrompt { get; set; }
 
     public async Task StartListeningAsync(CancellationTokenSource cts)
     {
