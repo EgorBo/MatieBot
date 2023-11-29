@@ -163,6 +163,24 @@ public class Database
         return false;
     }
 
+    public bool SetDalle3Cap(int newCap)
+    {
+        bool success = false;
+        using var ctx = new BotDbContext();
+        var users = ctx.Users.ToArray();
+        foreach (var user in users)
+        {
+            success = true;
+            user.Dalle3Cap = newCap;
+        }
+        if (success)
+        {
+            ctx.SaveChanges();
+            return true;
+        }
+        return false;
+    }
+
     public string GetDalle3Stats()
     {
         using var ctx = new BotDbContext();
