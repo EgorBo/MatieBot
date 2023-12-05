@@ -3,8 +3,10 @@ using Azure.Storage.Blobs;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Tiktoken;
 using static Constants;
 using File = System.IO.File;
+using System.Text;
 
 public class BotCommands
 {
@@ -71,6 +73,10 @@ public class BotCommands
         yield return new Command(Name: Constants.BotName, AltName: AltBotName, CommandType: CommandType.GTP_Text,
             Action: async (msg, trimmedMsg, botApp) =>
             {
+                if (!string.IsNullOrWhiteSpace(msg.ReplyToMessage?.Text))
+                {
+                    trimmedMsg += ":\n\n" + msg.ReplyToMessage.Text;
+                }
                 string gptResponse = await botApp.OpenAi.SendUserInputAsync(trimmedMsg);
                 await botApp.TgClient.ReplyAsync(msg, gptResponse);
                 return default;
@@ -429,7 +435,7 @@ public class BotCommands
             .ForAdmins().ForGoldChat();
 
         // Custom context for GPT
-        yield return new Command(Name: "!context", AltName: "!контекст",
+        yield return new Command(Name: "!context", AltName: "!reset",
             Action: async (msg, trimmedMsg, botApp) =>
             {
                 botApp.OpenAi.NewContext(trimmedMsg);
@@ -444,6 +450,41 @@ public class BotCommands
                 {
                     await botApp.TgClient.ReplyAsync(msg, text:
                         $"Статистка использования Dall-E 3 по юзерам:\n\n{botApp.BotDb.GetDalle3Stats()}");
+                    return default;
+                })
+            .ForAdmins().ForGoldChat();
+
+        yield return new Command(Name: "!tokens",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (string.IsNullOrWhiteSpace(trimmedMsg) && !string.IsNullOrWhiteSpace(msg.ReplyToMessage?.Text))
+                    {
+                        trimmedMsg = msg.ReplyToMessage.Text.Trim();
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(trimmedMsg))
+                    {
+                        var encoding = Tiktoken.Encoding.ForModel("gpt-4");
+                        IReadOnlyCollection<int> tokens = encoding.Encode(trimmedMsg);
+                        string text = encoding.Decode(tokens);
+                        await botApp.TgClient.ReplyAsync(msg, text:
+                            $"{encoding.CountTokens(text)} tokens.");
+                    }
+                    return default;
+                })
+            .ForAdmins().ForGoldChat();
+
+        yield return new Command(Name: "!sql",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (!BotAdmins.Contains(msg.From?.Id))
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Куда ты лезешь?");
+                        return default;
+                    }
+                    string text = await botApp.BotDb.ExecuteSql(trimmedMsg);
+                    text = $"Result:\n\n{text}";
+                    await botApp.TgClient.ReplyAsync(msg, text: text);
                     return default;
                 })
             .ForAdmins().ForGoldChat();

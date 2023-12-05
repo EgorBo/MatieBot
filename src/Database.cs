@@ -227,4 +227,13 @@ public class Database
         }
         return $"Пользователь '{user}' не найден";
     }
+
+    public async Task<string> ExecuteSql(string sql)
+    {
+        if (string.IsNullOrWhiteSpace(sql))
+            return "huh?";
+        using var ctx = new BotDbContext();
+        string[] result = ctx.Database.SqlQueryRaw<string>(sql).ToArray();
+        return string.Join("\n", result);
+    }
 }

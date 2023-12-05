@@ -21,6 +21,9 @@ public static class TelegramExtensions
     
     public static async Task ReplyAsync(this ITelegramBotClient client, Message msg, string text, bool parse = true)
     {
+        if (string.IsNullOrEmpty(text))
+            return;
+
         await WithRetry(async () =>
         {
             try
