@@ -230,10 +230,17 @@ public class Database
 
     public async Task<string> ExecuteSql(string sql)
     {
-        if (string.IsNullOrWhiteSpace(sql))
-            return "huh?";
-        using var ctx = new BotDbContext();
-        string[] result = ctx.Database.SqlQueryRaw<string>(sql).ToArray();
-        return string.Join("\n", result);
+        try
+        {
+            if (string.IsNullOrWhiteSpace(sql))
+                return "huh?";
+            using var ctx = new BotDbContext();
+            string[] result = ctx.Database.SqlQueryRaw<string>(sql).ToArray();
+            return string.Join("\n", result);
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
     }
 }
