@@ -47,8 +47,17 @@ public class BotCommands
         yield return new Command(Name: "!models",
             Action: async (msg, trimmedMsg, botApp) =>
             {
-                var models = string.Join(", ", await botApp.OpenAi.GetAllModels());
-                await botApp.TgClient.ReplyAsync(msg, $"ModelsResponse: {models}");
+                var models = await botApp.OpenAi.GetAllModels();
+                string response = "";
+                if (!string.IsNullOrWhiteSpace(trimmedMsg))
+                {
+                    response = "\n" + string.Join("\n", models.Where(m => m.Contains(trimmedMsg, StringComparison.OrdinalIgnoreCase)));
+                }
+                else
+                {
+                    response = string.Join(", ", models);
+                }
+                await botApp.TgClient.ReplyAsync(msg, $"ModelsResponse: {response}");
                 return default;
             });
 
