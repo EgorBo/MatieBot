@@ -135,7 +135,7 @@ public class Database
 
         int count = ctx.Messages
             .Count(m => m.Date > DateTime.UtcNow.AddHours(-24) && 
-                        (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) && 
+                        (m.CommandType == CommandType.GPT_Drawing) && 
                         m.Author.TelegramId == id);
         limit = user.Dalle3Cap;
         return count < user.Dalle3Cap;
@@ -186,7 +186,7 @@ public class Database
         using var ctx = new BotDbContext();
 
         var users = ctx.Messages
-            .Where(m => m.CommandType == CommandType.GPT_Vision || m.CommandType == CommandType.GPT_Drawing)
+            .Where(m => m.CommandType == CommandType.GPT_Drawing)
             .GroupBy(m => m.Author)
             .Select(i => new { User = i.Key.Username, Count = i.Count() })
             .ToArray() // SQLite fails without this
@@ -215,11 +215,11 @@ public class Database
             DateTime date = DateTime.UtcNow.AddHours(-24);
             int count24 = ctx.Messages.Count(m => 
                 m.Date > date &&
-                (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) &&
+                (m.CommandType == CommandType.GPT_Drawing) &&
                 m.Author == userObj);
 
             int countAllTime = ctx.Messages.Count(m =>
-                (m.CommandType == CommandType.GPT_Drawing || m.CommandType == CommandType.GPT_Vision) &&
+                (m.CommandType == CommandType.GPT_Drawing) &&
                 m.Author == userObj);
 
             int cap24 = userObj.Dalle3Cap;

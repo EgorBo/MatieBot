@@ -255,6 +255,7 @@ public class BotCommands
                         return default;
                     }
                     OpenAiService.DefaultStyle = voice;
+                    await botApp.TgClient.ReplyAsync(msg, text: "Done.");
                     return default;
                 })
             .ForAdmins().ForGoldChat();
@@ -266,16 +267,18 @@ public class BotCommands
                 {
                     const string dalleJailBreak = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: ";
 
+                    bool isAdmin = BotAdmins.Contains(msg.From?.Id);
+                    bool isHd = trimmedMsg.Contains(", HD");
+
                     List<(bool isHd, string prompt, OpenAiService.Orientation orientation)> variants = new()
                         {
-                            (false, trimmedMsg, OpenAiService.Orientation.Square),
-                            (false, dalleJailBreak + trimmedMsg, OpenAiService.Orientation.Square)
+                            (isHd, trimmedMsg, OpenAiService.Orientation.Square),
+                            (isHd, dalleJailBreak + trimmedMsg, OpenAiService.Orientation.Square)
                         };
 
-                    if (BotAdmins.Contains(msg.From?.Id))
+                    if (isAdmin)
                     {
-                        variants.Add((true, dalleJailBreak + trimmedMsg, OpenAiService.Orientation.Square));
-                        variants.Add((true,  trimmedMsg, OpenAiService.Orientation.Landscape));
+                        variants.Add((isHd,  trimmedMsg, OpenAiService.Orientation.Landscape));
                     }
 
                     var urls = new List<string>();
@@ -305,16 +308,6 @@ public class BotCommands
                     {
                         await botApp.TgClient.ReplyWithImagesAsync(msg, urls);
                     }
-                    return default;
-                })
-            .ForAdmins().ForGoldChat();
-
-        // OpenAI drawing
-        yield return new Command(Name: "!!draw", CommandType: CommandType.GPT_Drawing,
-                Description: "Generate an image using Dalle-3 (with exact prompt).",
-                Action: async (msg, trimmedMsg, botApp) =>
-                {
-                    await botApp.TgClient.ReplyAsync(msg, text: "команда устарела, используй просто !draw");
                     return default;
                 })
             .ForAdmins().ForGoldChat();
@@ -553,6 +546,5 @@ public record Command(string Name,
     }
 
     public bool IsDalle3 => 
-        CommandType == CommandType.GPT_Drawing ||
-        CommandType == CommandType.GPT_Vision;
+        CommandType == CommandType.GPT_Drawing;
 }
