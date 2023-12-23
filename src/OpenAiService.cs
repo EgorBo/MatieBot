@@ -218,7 +218,7 @@ public class OpenAiService
         }
     }
 
-    public async Task<string[]> GenerateImageVariationAsync(StreamContent content)
+    public async Task<string[]> GenerateImageVariationAsync(StreamContent content, string model, int num)
     {
         try
         {
@@ -228,8 +228,8 @@ public class OpenAiService
             using var formData = new MultipartFormDataContent
             {
                 { content, "image", "file.png" },
-                { new StringContent("1"), "n" },
-                { new StringContent("dall-e-3"), "model" },
+                { new StringContent(num.ToString()), "n" },
+                { new StringContent(model), "model" },
                 { new StringContent("1024x1024"), "size" }
             };
             var response = await httpClient.PostAsync("https://api.openai.com/v1/images/variations", formData);
