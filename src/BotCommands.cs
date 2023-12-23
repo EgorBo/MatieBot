@@ -386,12 +386,14 @@ public class BotCommands
                         }
 
                         string[] parts = trimmedMsg.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-                        int num = parts.Length > 0 ? int.Parse(parts[0]) : 1;
+                        int num = parts.Length > 0 ? int.Parse(parts[0]) : 3;
                         string model = parts.Length > 1 ? parts[1] : null;
 
-                        await using var fileStream = new FileStream(pngFile, FileMode.Open, FileAccess.Read);
-                        string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream), model, num);
-                        await botApp.TgClient.ReplyWithImagesAsync(msg, responses.ToList());
+                        await using (var fileStream = new FileStream(pngFile, FileMode.Open, FileAccess.Read))
+                        {
+                            string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream), model, num);
+                            await botApp.TgClient.ReplyWithImagesAsync(msg, responses.ToList());
+                        }
 
                         File.Delete(pngFile);
                         File.Delete(jpgFile);

@@ -229,7 +229,6 @@ public class OpenAiService
             {
                 { content, "image", "file.png" },
                 { new StringContent(num.ToString()), "n" },
-                { new StringContent(model), "model" },
                 { new StringContent("1024x1024"), "size" }
             };
             var response = await httpClient.PostAsync("https://api.openai.com/v1/images/variations", formData);
