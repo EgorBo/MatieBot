@@ -1,4 +1,6 @@
-﻿using Telegram.Bot;
+﻿using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using File = System.IO.File;
@@ -54,7 +56,7 @@ public static class TelegramExtensions
                 await DownloadFileTaskAsync(new Uri(url), tmp);
                 await client.SendPhotoAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, caption: caption,
                     photo: (InputFile.FromStream(File.OpenRead(tmp), Path.GetFileName(tmp))));
-                File.Delete(tmp);
+                //File.Delete(tmp); // TODO: close streams correctly first
             }
             catch
             {
@@ -78,7 +80,7 @@ public static class TelegramExtensions
             var media = tmps.Select((tmp, index) =>
                 new InputMediaPhoto(InputFile.FromStream(File.OpenRead(tmp), $"photo{index}.jpg"))).ToArray();
             await client.SendMediaGroupAsync(chatId: msg.Chat, replyToMessageId: msg.MessageId, media: media);
-            tmps.ForEach(File.Delete);
+            //tmps.ForEach(File.Delete); // TODO: close streams correctly first
         });
     }
     
@@ -88,5 +90,27 @@ public static class TelegramExtensions
         await using var s = await client.GetStreamAsync(uri);
         await using var fs = new FileStream(file, FileMode.CreateNew);
         await s.CopyToAsync(fs);
+    }
+
+    public static async Task<string> UploadPhotoToAzureAsync(this ITelegramBotClient client, Message msg)
+    {
+        PhotoSize photo = msg.Photo!.OrderByDescending(p => p.Width).First();
+        var fileInfo = await client.GetFileAsync(photo.FileId);
+        string tmpLocalFile = Path.GetTempFileName() + ".jpg";
+        await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            await client.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
+
+        // Upload to Azure Blob Storage
+        var blobServiceClient = new BlobServiceClient(Constants.AzureBlobCS);
+        string containerName = "telega";
+        var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+        string blobName = Guid.NewGuid() + ".jpg";
+        var blobClient = containerClient.GetBlobClient(blobName);
+        await using (FileStream uploadFileStream = File.OpenRead(tmpLocalFile))
+            await blobClient.UploadAsync(uploadFileStream, true);
+
+        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders { ContentType = "image/jpg" });
+        File.Delete(tmpLocalFile);
+        return blobClient.Uri.AbsoluteUri;
     }
 }

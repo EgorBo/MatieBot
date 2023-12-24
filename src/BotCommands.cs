@@ -205,35 +205,15 @@ public class BotCommands
                         string firstUrl = match.Value;
                         trimmedMsg = trimmedMsg.Replace(firstUrl, "").Trim();
                         var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, firstUrl, "high");
-                        await botApp.TgClient.ReplyAsync(msg, text: response);
+                        await botApp.TgClient.ReplyAsync(msg, text: response.text);
                     }
                     else if (msg.ReplyToMessage?.Photo?.Length > 0)
                     {
-                        // First, save file from Telegram to local disk
-                        PhotoSize photo = msg.ReplyToMessage!.Photo!.OrderByDescending(p => p.Width).First();
-                        var fileInfo = await botApp.TgClient.GetFileAsync(photo.FileId);
-                        string tmpLocalFile = Path.GetTempFileName() + ".jpg";
-                        await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
-                            await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
-
-                        // Upload to Azure Blob Storage
-                        var blobServiceClient = new BlobServiceClient(AzureBlobCS);
-                        string containerName = "telega";
-                        var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-                        string blobName = Guid.NewGuid() + ".jpg";
-                        var blobClient = containerClient.GetBlobClient(blobName);
-                        await using FileStream uploadFileStream = File.OpenRead(tmpLocalFile);
-                        await blobClient.UploadAsync(uploadFileStream, true);
-                        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders { ContentType = "image/jpg" });
-                        uploadFileStream.Close();
-                        string publicUrl = blobClient.Uri.AbsoluteUri;
+                        string publicUrl = await botApp.TgClient.UploadPhotoToAzureAsync(msg.ReplyToMessage);
 
                         // Call OpenAI GPT_Vision API
                         var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, publicUrl, detail: "high");
-                        await botApp.TgClient.ReplyAsync(msg, text: response);
-
-                        // Clean up, don't bother removing it from Azure
-                        File.Delete(tmpLocalFile);
+                        await botApp.TgClient.ReplyAsync(msg, text: response.text);
                     }
                     else
                     {
@@ -362,8 +342,63 @@ public class BotCommands
                 })
             .ForAdmins().ForGoldChat();
 
-        // OpenAI drawing (image variation)
         yield return new Command(Name: "!vary", CommandType: CommandType.GPT_Drawing,
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    if (msg.ReplyToMessage?.Photo?.Length == 0)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: "Не вижу картинку, сделай реплай на мессадж с картинкой.");
+                        return default;
+                    }
+
+                    string publicUrl = await botApp.TgClient.UploadPhotoToAzureAsync(msg.ReplyToMessage);
+
+                    if (string.IsNullOrEmpty(trimmedMsg))
+                    {
+                        trimmedMsg = "Describe the image";
+                    }
+
+                    // Call OpenAI GPT_Vision API
+                    var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, publicUrl);
+                    if (!response.success)
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: response.text);
+                        return default;
+                    }
+
+                    List<Task<OpenAiService.ImageGenerationResponse>> dalleTasks = new()
+                        {
+                            botApp.OpenAi.GenerateImageAsync(isHd: false, prompt: response.text),
+                            botApp.OpenAi.GenerateImageAsync(isHd: false, prompt: response.text)
+                        };
+
+                    await Task.WhenAll(dalleTasks);
+
+                    var images = new List<string>();
+                    var lastError = "error";
+                    foreach (var dalleTask in dalleTasks)
+                    {
+                        var dalleResponse = await dalleTask;
+                        string url = dalleResponse?.data?.FirstOrDefault()?.url ?? "";
+                        if (!string.IsNullOrEmpty(url))
+                            images.Add(url);
+                        lastError = dalleResponse?.error?.message;
+                    }
+
+                    if (images.Count > 0)
+                    {
+                        await botApp.TgClient.ReplyWithImagesAsync(msg, images);
+                    }
+                    else
+                    {
+                        await botApp.TgClient.ReplyAsync(msg, text: lastError);
+                    }
+                    return default;
+                })
+                .ForAdmins().ForGoldChat();
+
+        // OpenAI drawing (image variation)
+        yield return new Command(Name: "!old_vary", CommandType: CommandType.GPT_Drawing,
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     if (msg.ReplyToMessage == null || msg.ReplyToMessage.Photo?.Length == 0)
@@ -392,7 +427,15 @@ public class BotCommands
                         await using (var fileStream = new FileStream(pngFile, FileMode.Open, FileAccess.Read))
                         {
                             string[] responses = await botApp.OpenAi.GenerateImageVariationAsync(new StreamContent(fileStream), model, num);
-                            await botApp.TgClient.ReplyWithImagesAsync(msg, responses.ToList());
+                            var validLinks = responses.Where(r => r.StartsWith("http", StringComparison.OrdinalIgnoreCase)).ToList();
+                            if (validLinks.Count == 0)
+                            {
+                                await botApp.TgClient.ReplyAsync(msg, text: responses.FirstOrDefault());
+                            }
+                            else
+                            {
+                                await botApp.TgClient.ReplyWithImagesAsync(msg, validLinks);
+                            }
                         }
 
                         File.Delete(pngFile);

@@ -166,7 +166,7 @@ public class OpenAiService
         }
     }
 
-    public async Task<string> AnalyzeImageAsync(string prompt, string url, string detail = "low")
+    public async Task<(string text, bool success)> AnalyzeImageAsync(string prompt, string url, string detail = "low")
     {
         var requestData = new 
         {
@@ -210,11 +210,12 @@ public class OpenAiService
             HttpResponseMessage response = await client.SendAsync(request);
             var str = await response.Content.ReadAsStringAsync();
             var gptResponse = JsonConvert.DeserializeObject<ChatCompletionResponse>(str);
-            return gptResponse.error != null ? gptResponse.error.message : gptResponse.choices.First().message.content;
+
+            return gptResponse.error != null ? (gptResponse.error.message, false) : (gptResponse.choices.First().message.content, true);
         }
         catch (Exception e)
         {
-            return e.Message;
+            return (e.Message, false);
         }
     }
 
