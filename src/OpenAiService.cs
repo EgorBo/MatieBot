@@ -1,5 +1,9 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
+using Google.Apis.CustomSearchAPI.v1.Data;
+using Google.Apis.CustomSearchAPI.v1;
+using Google.Apis.Services;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using OpenAI_API;
 using OpenAI_API.Chat;
@@ -27,6 +31,61 @@ public class OpenAiService
             conversation.AppendSystemMessage(context.Trim());
         }
         return conversation;
+    }
+
+    public async Task<string> SearchInGoogleAsync(string query)
+    {
+        try
+        {
+            // Clean the input query (remove botname, etc)
+            if (query.StartsWith(Constants.BotName, StringComparison.OrdinalIgnoreCase))
+                query = query.Substring(Constants.BotName.Length);
+            if (query.StartsWith(Constants.AltBotName, StringComparison.OrdinalIgnoreCase))
+                query = query.Substring(Constants.BotName.Length);
+            query = query.Trim(' ', ',', '\r', '\n', '\t');
+
+            // Google Search (2 results)
+            var service = new CustomSearchAPIService(new BaseClientService.Initializer { ApiKey = Constants.GoogleApiKey });
+            CseResource.ListRequest listRequest = service.Cse.List();
+            listRequest.Cx = Constants.GoogleSearchId;
+            listRequest.Q = query;
+            listRequest.Num = 1;
+            Search search = await listRequest.ExecuteAsync();
+
+            // Walk through the results and get the raw html
+            string rawHtml = "";
+            foreach (Result result in search.Items)
+            {
+                try
+                {
+                    var html = await new HttpClient().GetStringAsync(result.Link);
+
+                    // Now the hard part: clean the html from scripts, tags, keep only meaningful text
+                    // my implementation sucks for sure.
+
+                    html = Regex.Replace(html, "(\\<script(.+?)\\</script\\>)|(\\<style(.+?)\\</style\\>)", "");
+                    html = Regex.Replace(html, "<[^>]*>", "");
+                    html = html.Replace("\t", " ").Replace("\n", " ").Replace("\r", " ").Replace("  ", " ").Replace("  ", " ");
+                    if (html.Length > 4000)
+                        html = html.Substring(0, 4000);
+                    rawHtml += "\n\n======================\n\n" + html;
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+
+            var conversation = _openAi.Chat.CreateConversation();
+            conversation.Model = new Model(DefaultGptModel);
+            conversation.AppendSystemMessage("Ты поисковой бот");
+            conversation.AppendUserInput($"Пользователь ищет в интернете запрос: \"{query}\". Проанализируй следующие необработанные поисковые результаты и попытайся предоставить какие-нибудь результаты на его запрос:\n\n" + rawHtml); ;
+            return await conversation.GetResponseFromChatbotAsync();
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
     }
 
     public class ImageGenerationData

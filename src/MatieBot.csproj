@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.19.0" />
+    <PackageReference Include="Google.Apis.CustomSearchAPI.v1" Version="1.65.0.3290" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0-preview.6.23329.4" />
     <PackageReference Include="OpenAI" Version="1.7.2" />
     <PackageReference Include="SkiaSharp" Version="2.88.6" />

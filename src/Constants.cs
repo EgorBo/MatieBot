@@ -5,6 +5,8 @@ public static class Constants
     public static readonly string OpenAiToken = Environment.GetEnvironmentVariable("MATIE_OAI_TOKEN");
     public static readonly string TelegramToken = Environment.GetEnvironmentVariable("MATIE_TG_TOKEN");
     public static readonly string AzureBlobCS = Environment.GetEnvironmentVariable("MATIE_AZURE_BLOB_CS");
+    public static readonly string GoogleApiKey = Environment.GetEnvironmentVariable("MATIE_GOOGLE_API_KEY");
+    public static readonly string GoogleSearchId = Environment.GetEnvironmentVariable("MATIE_GOOGLE_SEARCH_ID");
     public const string BotName = "Матье";
     public const string AltBotName = "Matie";
     public const string ChatGptSystemMessage = $"Тебя зовут {BotName}, ты отвечаешь на запросы в групповом чате";

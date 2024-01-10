@@ -559,6 +559,16 @@ public class BotCommands
                     return default;
                 })
             .ForAdmins().ForGoldChat();
+
+        // Custom context for GPT
+        yield return new Command(Name: "!google", AltName: "!гугл",
+                Action: async (msg, trimmedMsg, botApp) =>
+                {
+                    var result = await botApp.OpenAi.SearchInGoogleAsync(trimmedMsg);
+                    await botApp.TgClient.ReplyAsync(msg, text: result);
+                    return default;
+                })
+            .ForAdmins().ForGoldChat();
     }
 }
 
