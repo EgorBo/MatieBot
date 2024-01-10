@@ -7,6 +7,7 @@ using Tiktoken;
 using static Constants;
 using File = System.IO.File;
 using System.Text;
+using SkiaSharp;
 
 public class BotCommands
 {
@@ -415,9 +416,14 @@ public class BotCommands
                         {
                             await botApp.TgClient.DownloadFileAsync(fileInfo.FilePath!, jpgStream);
                         }
-                        using (Image image = await Image.LoadAsync(jpgFile))
+
+                        using (var inputStream = File.OpenRead(jpgFile))
                         {
-                            await image.SaveAsync(pngFile);
+                            using var original = SKBitmap.Decode(inputStream);
+                            using var outputStream = File.OpenWrite(pngFile);
+                            var image = SKImage.FromBitmap(original);
+                            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                            encoded.SaveTo(outputStream);
                         }
 
                         string[] parts = trimmedMsg.Split(" ", StringSplitOptions.RemoveEmptyEntries);
