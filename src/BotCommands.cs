@@ -118,12 +118,7 @@ public class BotCommands
                 Action: async (msg, trimmedMsg, botApp) =>
                 {
                     string voice = trimmedMsg.ToLower();
-                    if (voice != "alloy" &&
-                        voice != "echo" &&
-                        voice != "fable" &&
-                        voice != "nova" &&
-                        voice != "onyx" &&
-                        voice != "shimmer")
+                    if (voice == "help")
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: "Must be one of these: alloy, echo, fable, onyx, nova, and shimmer.");
                         return default;
