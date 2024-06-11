@@ -16,7 +16,7 @@ public class OpenAiService
 
     public void NewContext(string context) => _conversation = CreateContext(_openAi, context);
 
-    public static string DefaultGptModel { get; set; } = "gpt-4";
+    public static string DefaultGptModel { get; set; } = "gpt-4o";
     public static string DefaultVoice { get; set; } = "alloy";
     public static string DefaultStyle { get; set; } = "vivid";
 
