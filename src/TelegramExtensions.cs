@@ -92,9 +92,21 @@ public static class TelegramExtensions
         await s.CopyToAsync(fs);
     }
 
-    public static async Task<string> UploadPhotoToAzureAsync(this ITelegramBotClient client, Message msg)
+    public static async Task<string[]> UploadPhotosToAzureAsync(this ITelegramBotClient client, Message msg)
     {
-        PhotoSize photo = msg.Photo!.OrderByDescending(p => p.Width).First();
+        List<string> links = new();
+        foreach (var group in msg.Photo!.GroupBy(p => p.FileId))
+        {
+            var photo = group.OrderByDescending(p => p.Width).First();
+            if (photo.Width <= 100)
+                continue;
+            links.Add(await UploadPhotoToAzureAsync(client, photo));
+        }
+        return links.ToArray();
+    }
+
+    public static async Task<string> UploadPhotoToAzureAsync(this ITelegramBotClient client, PhotoSize photo)
+    {
         var fileInfo = await client.GetFileAsync(photo.FileId);
         string tmpLocalFile = Path.GetTempFileName() + ".jpg";
         await using (var jpgStream = new FileStream(tmpLocalFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))

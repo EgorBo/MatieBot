@@ -225,8 +225,13 @@ public class OpenAiService
         }
     }
 
-    public async Task<(string text, bool success)> AnalyzeImageAsync(string prompt, string url, string detail = "low")
+    public async Task<(string text, bool success)> AnalyzeImageAsync(string prompt, string[] urls, string detail = "low")
     {
+        ImageData[] images = urls.Select(url =>
+            new ImageData { 
+                type = "image_url", 
+                image_url = new ImageDataUrl { detail = detail, url = url } }).ToArray();
+
         var requestData = new 
         {
             model = "gpt-4-vision-preview",
@@ -240,21 +245,10 @@ public class OpenAiService
                 new
                 {
                     role = "user",
-                    content = new []
-                    {
-                        new
-                        {
-                            type = "image_url",
-                            image_url = new
-                            {
-                                url = url, 
-                                detail = detail
-                            }
-                        },
-                    }
+                    content = images
                 },
             },
-            max_tokens = 800
+            max_tokens = 600
         };
         string requestJson = JsonConvert.SerializeObject(requestData);
 
@@ -392,6 +386,18 @@ public class OpenAiService
     {
         public List<ImageVariationData> data { get; set; }
     }
+}
+
+public class ImageDataUrl
+{
+    public string detail { get; set; }
+    public string url { get; set; }
+}
+
+public class ImageData
+{
+    public string type { get; set; }
+    public ImageDataUrl image_url { get; set; }
 }
 
 public class HttpClientFactory : IHttpClientFactory

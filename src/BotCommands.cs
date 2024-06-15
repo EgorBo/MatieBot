@@ -200,12 +200,17 @@ public class BotCommands
                     {
                         string firstUrl = match.Value;
                         trimmedMsg = trimmedMsg.Replace(firstUrl, "").Trim();
-                        var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, firstUrl, "high");
+                        var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, [firstUrl], "high");
                         await botApp.TgClient.ReplyAsync(msg, text: response.text);
                     }
                     else if (msg.ReplyToMessage?.Photo?.Length > 0)
                     {
-                        string publicUrl = await botApp.TgClient.UploadPhotoToAzureAsync(msg.ReplyToMessage);
+                        string[] publicUrl = await botApp.TgClient.UploadPhotosToAzureAsync(msg.ReplyToMessage);
+                        if (publicUrl.Length == 0)
+                        {
+                            await botApp.TgClient.ReplyAsync(msg, text: "Не вижу картинку либо она слишком мелкая");
+                            return default;
+                        }
 
                         // Call OpenAI GPT_Vision API
                         var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, publicUrl, detail: "high");
@@ -347,7 +352,7 @@ public class BotCommands
                         return default;
                     }
 
-                    string publicUrl = await botApp.TgClient.UploadPhotoToAzureAsync(msg.ReplyToMessage);
+                    string[] publicUrl = await botApp.TgClient.UploadPhotosToAzureAsync(msg.ReplyToMessage);
 
                     if (string.IsNullOrEmpty(trimmedMsg))
                     {
@@ -355,7 +360,7 @@ public class BotCommands
                     }
 
                     // Call OpenAI GPT_Vision API
-                    var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, publicUrl);
+                    var response = await botApp.OpenAi.AnalyzeImageAsync(trimmedMsg, publicUrl, "high");
                     if (!response.success)
                     {
                         await botApp.TgClient.ReplyAsync(msg, text: response.text);
