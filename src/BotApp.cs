@@ -5,6 +5,8 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using static Constants;
 
+// test
+
 Console.WriteLine("Starting bot...");
 AppDomain.CurrentDomain.UnhandledException += (_, _) => { };
 var cts = new CancellationTokenSource();
